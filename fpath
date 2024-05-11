@@ -1,0 +1,735 @@
+#!/usr/bin/env python3
+
+from sys import exit, stdin
+from argparse import ArgumentParser
+from argparse import Namespace as ArgumentNamespace
+from pathlib import Path
+from datetime import datetime
+from stat import filemode
+from re import finditer as regex_finditer
+from re import sub as regex_sub
+
+import mimetypes
+
+
+class fmtPath:
+
+    home = Path.home()
+
+    def __init__(
+        self,
+        path: str,
+        absolute: bool,
+        resolve: bool,
+        base: Path | None,
+        tilde: bool,
+        quotes: str,
+    ) -> None:
+        self.origin = path
+        # work_path does not contain all configurations and is not intended for
+        # end user. Use path_with_lazy() to calculate final state with all lazy
+        # options incorporated dynamically at request time. That's because the
+        # final path can contain the tilde in example, which is incompatible
+        # with some operations.
+        self.work_path = Path(unquote(path)).expanduser()
+
+        if base is not None and not self.work_path.is_absolute():
+            self.work_path = base.expanduser() / self.work_path
+        if resolve:
+            self.work_path = self.work_path.resolve()
+        elif absolute:
+            self.work_path = self.work_path.absolute()
+
+        self.lazy_tilde = tilde
+        self.lazy_quotes = quotes
+        return
+
+    def __str__(self) -> str:
+        return self.lazy_quotes + self.path.as_posix() + self.lazy_quotes
+
+    def __repr__(self) -> str:
+        return repr(self.lazy_quotes + self.path.as_posix() + self.lazy_quotes)
+
+    @property
+    def path(self) -> Path:
+        return self.path_with_lazy()
+
+    def path_with_lazy(self) -> Path:
+        path = self.work_path
+        if self.lazy_tilde:
+            try:
+                path = "~" / path.relative_to(self.home)
+            except ValueError:
+                pass
+        return path
+
+    def exists(self) -> bool:
+        return self.work_path.exists()
+
+
+# Convert style code parts into a fully functional terminal code sequence.
+def encode_style_codes(text: str, start_code: str, end_code: str = "") -> str:
+    if end_code == "":
+        return f"\033[{start_code}m{text}"
+    else:
+        return f"\033[{start_code}m{text}\u001b[{end_code}m"
+
+
+def terminal_style_codes_table(
+    flat: bool = False,
+) -> dict["str", dict["str", "str"]]:
+    # Should be used with an encoder to build the final terminal code sequence.
+    # Not all codes work on all terminals.
+    # https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
+    table = {
+        "global": {
+            "reset": "0",
+            "default": "0",
+        },
+        "effects": {
+            "bold": "1",
+            "italic": "3",
+            "dim": "2",
+            "underline": "4",
+            "dunderline": "21",
+            "overline": "53",
+            "strike": "9",
+            "blink": "5",
+            "reverse": "7",
+            "hide": "8",
+        },
+        "effects off": {
+            "/bold": "22",
+            "/italic": "23",
+            "/dim": "22",
+            "/underline": "24",
+            "/dunderline": "24",
+            "/overline": "55",
+            "/reverse": "27",
+            "/strike": "29",
+            "/blink": "25",
+            "/hide": "28",
+        },
+        "foreground colors": {
+            "dark": "30",
+            "white": "37",
+            "red": "31",
+            "green": "32",
+            "blue": "34",
+            "yellow": "33",
+            "magenta": "35",
+            "cyan": "36",
+        },
+        "bright foreground colors": {
+            "bdark": "90",
+            "bwhite": "97",
+            "bred": "91",
+            "bgreen": "92",
+            "bblue": "94",
+            "byellow": "93",
+            "bmagenta": "95",
+            "bcyan": "96",
+        },
+        "background colors": {
+            "bg.dark": "40",
+            "bg.white": "47",
+            "bg.red": "41",
+            "bg.green": "42",
+            "bg.blue": "44",
+            "bg.yellow": "43",
+            "bg.magenta": "45",
+            "bg.cyan": "46",
+        },
+        "bright background colors": {
+            "bg.bdark": "100",
+            "bg.bwhite": "107",
+            "bg.bred": "101",
+            "bg.bgreen": "102",
+            "bg.bblue": "104",
+            "bg.byellow": "103",
+            "bg.bmagenta": "105",
+            "bg.bcyan": "106",
+        },
+        "colors off": {
+            "/color": "39",
+            "/bg.color": "49",
+        },
+    }
+    if flat:
+        inner = {}
+        for _, inner_dict in table.items():
+            inner.update(inner_dict)
+        return inner
+    return table
+
+
+def supported_fmt_commands() -> dict[str, str]:
+    return {
+        "STYLE": "name of the style like 'green' or 'bold'",
+        "origin": "original input data before processing",
+        "list": "path broken up into individual parts",
+        "0-9": "access each part of a path with numbers",
+        "path": "path as posix",
+        "root": "drive and root if any",
+        "uri": "path as file URI",
+        "dir": "parent directory path",
+        "dirname": "parent directory name without path",
+        "name": "file name without directory",
+        "stem": "file name without directory and extension",
+        "ext": "single file extension after '.'",
+        "exts": "all file extensions if more than one '.'",
+        "type": "known file type based on extension",
+        "mime": "known mime based on extension",
+        "owner": "name of owner from file",
+        "group": "name of group from file owner",
+        ".stat": "unprocessed file stat results",
+        ".mode": "file permissions",
+        ".dev": "device id where this file resides",
+        ".uid": "user id number from file owner",
+        ".gid": "group id number from file owner",
+        ".nlink": "number of hard links on filesystem",
+        ".size": "human readable format of file size",
+        ".b": "file size in bytes",
+        ".kb": "file size in kilobytes",
+        ".mb": "file size in megabytes",
+        ".atime": "last access timestamp in readable format",
+        ".mtime": "last modified timestamp in readable format",
+        ".ctime": "lchanged timestamp in readable format",
+        ".atime:args": "custom strftime format codes",
+        ".mtime:args": "custom strftime format codes",
+        ".ctime:args": "custom strftime format codes",
+    }
+
+
+def unescape_backslash_chars(source: str):
+    if "\\" in source:
+        source = source.replace(r"\\", "\\")
+        source = source.replace(r"\n", "\n")
+        source = source.replace(r"\t", "\t")
+        source = source.replace(r"\r", "\r")
+        source = source.replace(r"\b", "\b")
+        source = source.replace(r"\f", "\f")
+    return source
+
+
+class App:
+    name: str = "fpath"
+    version: str = "0.1"
+
+    def __init__(self, args: ArgumentNamespace) -> None:
+        mimetypes.init()
+
+        self.print_version: bool = args.version
+        self.paths: list[fmtPath] = []
+
+        if args.quotes:
+            self.quotes = "'"
+        elif args.double_quotes:
+            self.quotes = '"'
+        else:
+            self.quotes = ""
+
+        input_paths: list[str] = args.path
+        if not args.ignore_stdin and not stdin.isatty():
+            input_paths.extend(stdin_lines())
+
+        self.paths: list[fmtPath] = [
+            fmtPath(p, args.absolute, args.resolve, args.base, args.tilde, self.quotes)
+            for p in input_paths
+        ]
+
+        self.include = args.include
+        if args.include:
+            self.paths = [p for p in self.paths if self.glob_include(p.path)]
+        else:
+            self.include = []
+
+        self.exclude = args.exclude
+        if args.exclude:
+            self.paths = [p for p in self.paths if self.glob_exclude(p.path)]
+        else:
+            self.exclude = []
+
+        if args.existing:
+            self.paths = [p for p in self.paths if p.exists()]
+        elif args.missing:
+            self.paths = [p for p in self.paths if not p.exists()]
+
+        self.format = args.format
+        self.no_last_lineend = args.no_last_lineend
+
+        self.lineend = args.lineend
+        if self.lineend != "\n" and self.lineend != "":
+            self.lineend = unescape_backslash_chars(self.lineend)
+
+        self.sep = args.sep
+        if self.sep != "/" and self.sep != "":
+            self.sep = unescape_backslash_chars(self.sep)
+
+        self.style_codes = terminal_style_codes_table(flat=True)
+        if args.sep_style in self.style_codes:
+            self.sep_style = self.style_codes[args.sep_style]
+        else:
+            self.sep_style = None
+
+        return
+
+    def __iter__(self):
+        num_entries = len(self.paths)
+        for index, path in enumerate(self.apply_format(), start=1):
+            if self.no_last_lineend and num_entries == index:
+                yield str(path)
+            else:
+                yield str(path) + self.lineend
+
+    def glob_include(self, path: Path):
+        for pattern in self.include:
+            if not path.match(pattern):
+                return False
+        return True
+
+    def glob_exclude(self, path: Path) -> bool:
+        for pattern in self.exclude:
+            if path.match(pattern):
+                return False
+        return True
+
+    def apply_format(self) -> list[fmtPath]:
+
+        def unescape(text: str) -> str:
+            return text.replace("\x02", "{").replace("\x03", "}")
+
+        def escape(text: str) -> str:
+            return text.replace("{", "\x02").replace("}", "\x03")
+
+        def escape_and_quote(text: str) -> str:
+            return self.quotes + escape(text) + self.quotes
+
+        if self.format is None:
+            return self.paths
+
+        # Escaping the "{" and "}" is required, because file paths could
+        # potentially include the exact sequence by accident. This also allows
+        # us to use these characters literally for output. They are all
+        # unescaped at the end.
+        # Also the escape sequences with backslash should be replaced first,
+        # so they cannot interfere with paths.
+
+        entries = []
+        for entry in self.paths:
+            fmt: str = self.format
+
+            fmt = unescape_backslash_chars(fmt)
+            fmt = fmt.replace(r"\0", "\x00")
+            fmt = fmt.replace(r"\{", "\x02")
+            fmt = fmt.replace(r"\}", "\x03")
+
+            fmt = fmt.replace("{origin}", escape(entry.origin))
+            parts = entry.path.parts
+            fmt = fmt.replace("{list}", escape_and_quote(str(parts)))
+            fmt = fmt.replace("{path}", escape_and_quote(entry.path.as_posix()))
+            fmt = fmt.replace("{root}", escape_and_quote(entry.path.anchor))
+            fmt = fmt.replace("{uri}", escape_and_quote(entry.path.absolute().as_uri()))
+            fmt = fmt.replace("{dir}", escape_and_quote(entry.path.parent.as_posix()))
+            fmt = fmt.replace("{dirname}", escape_and_quote(entry.path.parent.name))
+            fmt = fmt.replace("{name}", escape_and_quote(entry.path.name))
+            fmt = fmt.replace("{stem}", escape_and_quote(entry.path.stem))
+            fmt = fmt.replace("{ext}", escape_and_quote(entry.path.suffix))
+            fmt = fmt.replace("{exts}", escape_and_quote("".join(entry.path.suffixes)))
+
+            try:
+                fmt = fmt.replace("{type}", mimetypes.encodings_map[entry.path.suffix])
+            except KeyError:
+                fmt = fmt.replace("{type}", "")
+
+            try:
+                fmt = fmt.replace("{mime}", mimetypes.types_map[entry.path.suffix])
+            except KeyError:
+                fmt = fmt.replace("{mime}", "")
+
+            try:
+                fmt = fmt.replace("{owner}", entry.path.owner())
+            except (KeyError, FileNotFoundError):
+                fmt = fmt.replace("{owner}", "")
+
+            try:
+                fmt = fmt.replace("{group}", entry.path.group())
+            except (KeyError, FileNotFoundError):
+                fmt = fmt.replace("{group}", "")
+
+            if "{." in fmt:
+                # https://docs.python.org/3/library/os.html#os.stat_result
+                try:
+                    st = entry.path.expanduser().stat()
+                except FileNotFoundError:
+                    fmt = regex_sub(r"{\.[^{}]+?}", "", fmt)
+                else:
+                    fmt = fmt.replace("{.stat}", str(st).removeprefix("os.stat_result"))
+                    if "{." in fmt:
+                        fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
+                        fmt = fmt.replace("{.dev}", str(st.st_dev))
+                        fmt = fmt.replace("{.uid}", str(st.st_uid))
+                        fmt = fmt.replace("{.gid}", str(st.st_gid))
+                        fmt = fmt.replace("{.nlink}", size(st.st_nlink))
+                        fmt = fmt.replace("{.size}", size(st.st_size))
+                        fmt = fmt.replace("{.b}", str(st.st_size))
+                        fmt = fmt.replace("{.kb}", str(round(st.st_size / 1024, 1)))
+                        fmt = fmt.replace(
+                            "{.mb}", str(round(st.st_size / 1024 / 1024, 1))
+                        )
+                        fmt = fmt.replace("{.atime}", time(st.st_atime))
+                        fmt = fmt.replace("{.mtime}", time(st.st_mtime))
+                        fmt = fmt.replace("{.ctime}", time(st.st_ctime))
+                        if "time:" in fmt:
+                            fmt = self.time_custom_arg(st.st_atime, "a", fmt)
+                            fmt = self.time_custom_arg(st.st_mtime, "m", fmt)
+                            fmt = self.time_custom_arg(st.st_ctime, "c", fmt)
+
+            if "{" in fmt:
+                for name, code in self.style_codes.items():
+                    fmt = fmt.replace(
+                        "{" + name + "}", encode_style_codes("", str(code))
+                    )
+
+            if "{" in fmt:
+                p_len = len(parts)
+                max_fmt_num = 10
+                # {0}, {1}, {2} ... {9}
+                for i in range(max_fmt_num):
+                    if i == max_fmt_num:
+                        break
+                    iseq = "{" + str(i) + "}"
+                    if i >= p_len:
+                        fmt = fmt.replace(iseq, escape_and_quote(""))
+                        # note: alternatively get last element instead empty.
+                        fmt = fmt.replace(iseq, escape_and_quote(parts[p_len - 1]))
+                    else:
+                        fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
+
+            entries.append(unescape(fmt))
+        return entries
+
+    def stylize_sep(self, source: str) -> str:
+        sep = str(self.sep)
+        if sep != "/":
+            source = source.replace("/", sep)
+        if self.sep_style:
+            source = source.replace(
+                sep, encode_style_codes(sep, str(self.sep_style), "0")
+            )
+        source += encode_style_codes("", "0")
+        return source
+
+    # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+    def time_custom_arg(self, seconds: float, prefix: str, source: str) -> str:
+        # Looking for format like: "{.atime:arguments}"
+        for match in regex_finditer(
+            r"{\." + prefix + r"time:([-+ _/%,.:a-z-A-Z0-9]+?)?}", source
+        ):
+            args = match.group(1)
+            if args is None:
+                args = ""
+            source = source.replace(
+                "{." + prefix + "time:" + args + "}",
+                datetime.fromtimestamp(seconds).strftime(args),
+            )
+        return source
+
+    def help_explain_style(self, compact: bool = False) -> None:
+        print(
+            r"""List of style names
+
+-s can use only one style, while -F can mix and match multiple styles. Using
+styles with -s option will overwrite color and style changes from -F.
+
+    -s "red"
+    -sblink
+
+-F supports styles too. More about this option with -H fmt.
+
+    -F{red}
+    -F"Hyper {blink}HYPER{/blink}{default}"
+"""
+        )
+        for header, names in terminal_style_codes_table().items():
+            if compact:
+                # print(f"{header}:", ", ".join(names.keys()), end="\n")
+                print(f"{header}:", ", ".join(names.keys()), end="\n")
+            else:
+                print(f"{header}")
+                print("\t" + "\n\t".join(names.keys()), end="\n\n")
+        return
+
+    def help_explain_fmt(self, compact: bool = False) -> None:
+        print(
+            r"""List of format commands
+
+-F requires the names between in curly braces to be recognized. Also one should
+reset or default at the end of the command chain, otherwise it will spill over
+to the other lines. -F will stop printing paths by default and give full
+control with these control sequences.
+
+Very few commands even support arguments on their own for even more
+customization. Those have the format {command:arguments}.
+
+    -F{name}
+    -F'{uri}\n\t{.size}\n\t{.atime}\n\t{.mode}\n'
+    -F'{byellow}{name}{/color}  in  {dim}{cyan}{dirname}{default}'
+    -F'{.atime:%Y-%m-%d} {name}'
+
+All style commands are also available. List them with -H style.
+
+In addition following control sequences are translated into their "real"
+meaning:
+
+    "\\" to literal single slash "\"
+    "\n" to newline
+    "\t" to tab
+    "\r" to carriage return
+    "\b" to backspace
+    "\f" to form feed
+
+"""
+        )
+        for key, value in supported_fmt_commands().items():
+            if compact:
+                print(f"{key}:", value)
+            else:
+                print("{" + key + "}")
+                print(f"\t{value}\n")
+        return
+
+
+def size(bytes: float) -> str:
+    unit = "B"
+    if bytes > 1024:
+        bytes = bytes / 1024
+        unit = "KB"
+    if bytes > 1024:
+        bytes = bytes / 1024
+        unit = "MB"
+    if bytes > 1024:
+        bytes = bytes / 1024
+        unit = "GB"
+    return f"{round(bytes, 1)} {unit}"
+
+
+def time(seconds: float) -> str:
+    return datetime.fromtimestamp(seconds).strftime("%A, %B %d, %Y %I:%M:%S")
+
+
+def unquote(path: str) -> str:
+    if path.startswith("'") and path.endswith("'"):
+        path = path[1:]
+        path = path[:-1]
+    elif path.startswith('"') and path.endswith('"'):
+        path = path[1:]
+        path = path[:-1]
+    return path
+
+
+def stdin_lines() -> list[str]:
+    lines: list[str] = []
+    for line in stdin.readlines():
+        if line:
+            lines.extend(line.split("\n"))
+    return [line for line in lines if not line == ""]
+
+
+def parse_arguments() -> ArgumentNamespace:
+    parser = ArgumentParser(
+        description="Reformat and stylize file path like text output.",
+        epilog=("Copyright © 2024 Tuncay D. <https://github.com/thingsiplay/fpath>"),
+    )
+
+    _ = parser.add_argument(
+        "path",
+        default=[],
+        nargs="*",
+        help="file or directory as textual input to operate on the path",
+    )
+
+    _ = parser.add_argument(
+        "--version",
+        default=False,
+        action="store_true",
+        help="print version and exit",
+    )
+
+    choices = ["style", "style_compact", "fmt", "fmt_compact"]
+    _ = parser.add_argument(
+        "-H",
+        "--explain",
+        metavar="SUB",
+        choices=choices,
+        help=f"Subjects: {", ".join(choices)}",
+    )
+
+    _ = parser.add_argument(
+        "-F",
+        "--format",
+        metavar="FMT",
+        default=None,
+        help="construct output with variables and control sequences",
+    )
+
+    _ = parser.add_argument(
+        "-/",
+        "--sep",
+        metavar="STR",
+        default="/",
+        help="replace the default path separateor slash with an arbitrary text",
+    )
+
+    _ = parser.add_argument(
+        "-s",
+        "--sep-style",
+        metavar="NAME",
+        help="emphasize and change color of path separator",
+    )
+
+    _ = parser.add_argument(
+        "-l",
+        "--lineend",
+        metavar="STR",
+        default="\n",
+        help="text to output as each line ending, defaults to newline character",
+    )
+
+    _ = parser.add_argument(
+        "-n",
+        "--no-last-lineend",
+        default=False,
+        action="store_true",
+        help="do not put trailing lineend from -l for the last output file",
+    )
+
+    _ = parser.add_argument(
+        "-b",
+        "--base",
+        metavar="DIR",
+        type=Path,
+        help="base directory to put in front of each relative path",
+    )
+
+    absolute_group = parser.add_mutually_exclusive_group()
+
+    _ = absolute_group.add_argument(
+        "-a",
+        "--absolute",
+        default=False,
+        action="store_true",
+        help="expand relative to absolute by current working dir, do not normalize",
+    )
+
+    _ = absolute_group.add_argument(
+        "-r",
+        "--resolve",
+        default=False,
+        action="store_true",
+        help="expand relative to absolute, normalize '.', '..' and follow symlinks",
+    )
+
+    _ = parser.add_argument(
+        "-t",
+        "--tilde",
+        default=False,
+        action="store_true",
+        help="display users home directory as tilde '~/'",
+    )
+
+    quotes_group = parser.add_mutually_exclusive_group()
+
+    _ = quotes_group.add_argument(
+        "-q",
+        "--quotes",
+        default=False,
+        action="store_true",
+        help="enclose all paths by surrounding single quotes ''",
+    )
+
+    _ = quotes_group.add_argument(
+        "-qq",
+        "--double-quotes",
+        default=False,
+        action="store_true",
+        help='enclose all paths by surrounding double quotes ""',
+    )
+
+    existing_group = parser.add_mutually_exclusive_group()
+
+    _ = existing_group.add_argument(
+        "-e",
+        "--existing",
+        default=False,
+        action="store_true",
+        help="process only paths pointing to existing files and folders",
+    )
+
+    _ = existing_group.add_argument(
+        "-m",
+        "--missing",
+        default=False,
+        action="store_true",
+        help="exclude existing files and folders",
+    )
+
+    _ = parser.add_argument(
+        "-i",
+        "--include",
+        metavar="GLOB",
+        default=[],
+        nargs="*",
+        help="case-sensitive wildcard pattern, process matching names only",
+    )
+
+    _ = parser.add_argument(
+        "-x",
+        "--exclude",
+        metavar="GLOB",
+        default=[],
+        nargs="*",
+        help="case-sensitive wildcard pattern, exclude matching names",
+    )
+
+    _ = parser.add_argument(
+        "-z",
+        "--ignore-stdin",
+        default=False,
+        action="store_true",
+        help="do not read from newline separated stdin stream as path",
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    args: ArgumentNamespace = parse_arguments()
+
+    app = App(args)
+
+    if app.print_version:
+        print(f"{app.name} v{app.version}")
+        return 0
+
+    if args.explain:
+        if args.explain == "style":
+            app.help_explain_style(compact=False)
+        elif args.explain == "style_compact":
+            app.help_explain_style(compact=True)
+        elif args.explain == "fmt":
+            app.help_explain_fmt(compact=False)
+        elif args.explain == "fmt_compact":
+            app.help_explain_fmt(compact=True)
+        return 0
+
+    output = ""
+    for path in app:
+        output += path
+    print(app.stylize_sep(output), end="")
+
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())
