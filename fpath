@@ -444,7 +444,7 @@ class App:
                     if i >= p_len:
                         fmt = fmt.replace(iseq, escape_and_quote(""))
                         # note: alternatively get last element instead empty.
-                        fmt = fmt.replace(iseq, escape_and_quote(parts[p_len - 1]))
+                        # fmt = fmt.replace(iseq, escape_and_quote(parts[p_len - 1]))
                     else:
                         fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
 
