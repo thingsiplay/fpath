@@ -83,6 +83,7 @@ def terminal_style_codes_table(
     # https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
     table = {
         "global": {
+            "": "0",
             "reset": "0",
             "default": "0",
         },
@@ -493,6 +494,8 @@ styles with -s option will overwrite color and style changes from -F.
 
     -s "red"
     -sblink
+
+An empty style as "" or {} is interpreted as reset.
 
 -F supports styles too. More about this option with -H fmt.
 
