@@ -56,33 +56,28 @@ alias or functions and use the program directly.
 The usage is pretty simple:
 
 ```bash
-stdout | fpath [options] -- [path...]
+path... | fpath [options] -- [path...]
 ```
 
-By default it will read from (newline character delimited) stdout of another
-program and optionally from given arguments as file paths. And they are output
-back after some processing. By default quotes (single and double) enclosing a
-path are removed and the leading tilde is resolved into users home directory;
-just as god intended. Let's see how this works in a simple series of commands.
+By default stdin from a piped process is parsed as list of paths split by
+newline. Optionally paths can be given as arguments too. All input paths are
+output to stdout. Single and double quotes surrounding a path is automatically
+detected and removed. Leading tilde character is translated into the users home
+directory. With options all of these default processing can be changed.
 
-Use `-h` option to display available options.
+The stdin can be ignored with option `-z`. And `--` tells the script to stop
+processing options and accept anything that comes after the double dash as path
+input files rather than options.
 
-```bash
-fpath -h
-```
-
-Let's assume the output of `ls` from the home directory. (Usually it is advised
-against using `ls` output in pipes, but for demonstration purposes just let's
-ignore any good advice here.)
+Let's see how this works with a series of simple examples:
 
 ### Basics
 
-As you can see by default output is just their names without a path at all. And
-those with spaces in the name are enclosed by quotes:
+Output from `ls` will include quotes for paths with spaces:
 
 ```bash
 $ cd ~
-$ ls -1 ~/Videos
+$ ls -1 Videos
 Gaming
 'My Friends'
 'My Game Recording'
@@ -90,12 +85,12 @@ Gaming
 YouTube
 ```
 
-The default output by piping into `fpath` in this case would just remove those
-quotes for consistency:
+Pipe that into `fpath`, which removes those quotes automatically for
+consistency:
 
 ```bash
 $ cd ~
-$ ls -1 ~/Videos | fpath
+$ ls -1 Videos | fpath
 Gaming
 My Friends
 My Game Recording
@@ -103,11 +98,11 @@ My Tutorials
 YouTube
 ```
 
-However single quotes can be enforced for all paths with option `-q`:
+Enforce single quotes on all paths with `-q`:
 
 ```bash
 $ cd ~
-$ ls -1 ~/Videos | fpath -q
+$ ls -1 Videos | fpath -q
 'Gaming'
 'My Friends'
 'My Game Recording'
@@ -115,29 +110,27 @@ $ ls -1 ~/Videos | fpath -q
 'YouTube'
 ```
 
-Option `-a` can add the current working directory to all relative paths to turn
-them into an absolute path. This would result in something like
-`/home/tuncay/Gaming` like paths. We can use option `-t` to convert the home
-part back into a tilde, for visual clarity:
+Because we are not in the same directory as "~/Videos", using the name of a
+file or directory would not work. To build a correct path we can tell `fpath`
+to add a base path in front of each relative path:
 
 ```bash
 $ cd ~
-$ ls -1 ~/Videos | fpath -a -t
-~/Gaming
-~/My Friends
-~/My Game Recording
-~/My Tutorials
-~/YouTube
+$ ls -1 Videos | fpath -b Videos
+Videos/Gaming
+Videos/My Friends
+Videos/My Game Recording
+Videos/My Tutorials
+Videos/YouTube
 ```
 
-As said before, `ls` isn't actually the best tool for combining its output into
-other programs. The better tool for this job would be to use `find` or even any
-other tool dedicated for this kind of job. Here it produces entire paths with
-all its directory parts and without quotes, a much better place to be in.
+Add `-a` to turn every relative path into an absolute path, by adding the
+current working directory. This operation is safe, as we build a correct
+partial path in the previous example. Now we can expand it fully:
 
 ```bash
 $ cd ~
-$ find ~/Videos/* -maxdepth 0
+$ ls -1 Videos | fpath -a -b Videos
 /home/tuncay/Videos/Gaming
 /home/tuncay/Videos/My Friends
 /home/tuncay/Videos/My Game Recording
@@ -145,78 +138,53 @@ $ find ~/Videos/* -maxdepth 0
 /home/tuncay/Videos/YouTube
 ```
 
+`find` is a better tool for scripting and combining output with other tools.
+
+```bash
+$ cd ~
+$ find Videos/* -maxdepth 0
+Videos/Gaming
+Videos/My Friends
+Videos/My Game Recording
+Videos/My Tutorials
+Videos/YouTube
+```
+
 Let's play with the path separator slash "/" and replace it by option `-/` to
 any other text:
 
 ```bash
 $ cd ~
-$ find ~/Videos/* -maxdepth 0 | fpath -/' -> '
- -> home -> tuncay -> Videos -> Gaming
- -> home -> tuncay -> Videos -> My Friends
- -> home -> tuncay -> Videos -> My Game Recording
- -> home -> tuncay -> Videos -> My Tutorials
- -> home -> tuncay -> Videos -> YouTube
+$ find Videos/* -maxdepth 0 | fpath -/' -> '
+Videos -> Gaming
+Videos -> My Friends
+Videos -> My Game Recording
+Videos -> My Tutorials
+Videos -> YouTube
 ```
 
-Single style names can be used with `-s` option, to style the path separator
-itself. For simplicity no curved brackets `{}` are required and we cannot
-combine multiple styles here. Off course I cannot show you the colors that
-easily without screenshots. This is how it would look like with red separators:
+Color of the path separator (meaning "/" by default) can changed with the style
+option `-s` . For simplicity only one style can be specified here, but curved
+brackets `{` and `}` are not required.
 
 ```bash
 $ cd ~
-$ find ~/Videos/* -maxdepth 0 | fpath -s red
+$ find Videos/* -maxdepth 0 | fpath -s red
 # see img/red.png
 ```
 
 ![screenshot: red style](img/red.png)
 
 Have in mind that styles from `-s` will partially overwrite and collide with
-styles specified in `-F` option, if not being carefully. For more advanced
-usage and an explanation, see below [Advanced](#advanced) topic.
-
-One more thing: Let's start by a different folder.
-
-```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0
-./Arcade - A-Z Uncommon Arcade Games.lpl
-./emojicherrypick
-./new.png
-./playlists.zip
-```
-
-Without options `fpath` would remove the `./`, as having no directory part in
-the path is synonymous with the current directory:
-
-```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath
-Arcade - A-Z Uncommon Arcade Games.lpl
-emojicherrypick
-new.png
-playlists.zip
-```
-
-We can use the `-a` option again to turn the path into an absolute path, with
-its parts from current working directory.
-
-```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a
-/home/tuncay/Desktop/My Files/Arcade - A-Z Uncommon Arcade Games.lpl
-/home/tuncay/Desktop/My Files/emojicherrypick
-/home/tuncay/Desktop/My Files/new.png
-/home/tuncay/Desktop/My Files/playlists.zip
-```
+styles specified in `-F` option, if not being carefully.
 
 ### Advanced
 
 Using the `-F` option you get to control what and how it is being output.
 Control sequences and variables allow fine grained formatting. These commands
-need to be enclosed by curved brackets `{}`, such as `{red}` or `{dirname}` to
-be recognized. Mix and match them together with arbitrary text to form the
-exact format you like.
+need to be enclosed by curved brackets `{` and `}`, such as `{red}` or
+`{dirname}` to be recognized. Mix and match them together with arbitrary text
+to form the exact format you like.
 
 To see a list of supported style and format commands, use the explain option
 `-H` or `--explain`:
@@ -226,13 +194,22 @@ fpath --explain fmt
 fpath --explain style
 ```
 
-Let's turn the tables and get to the meat. Show the name and directory of path
-on their own lines, with an additional newline at the end for clarity (note
-in the example output below the tabs are replaced by 8 spaces, but in the
-terminal actual tabs are produced and output):
+For the following examples, I have create a new directory with random files:
 
 ```bash
-$ cd ~/Desktop/My Files/
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0
+./Arcade - A-Z Uncommon Arcade Games.lpl
+./emojicherrypick
+./new.png
+./playlists.zip
+```
+
+Let's turn the tables and get to the meat. Show base name of file, with it's
+directory part below, indicated by an arrow:
+
+```bash
+$ cd ~/Desktop/My" "Files/
 $ find ./* -maxdepth 0 | fpath -a -F'{name}\n\t-> {dir}\n'
 Arcade - A-Z Uncommon Arcade Games.lpl
         -> /home/tuncay/Desktop/My Files
@@ -248,85 +225,89 @@ playlists.zip
 
 ```
 
-Let's add some more information to the output, such as the file permissions
-and file size (but without the arrow from previous example):
+Let's add some more information to the output, such as the file permissions and
+file size (but with double colon and without arrow this time):
 
 ```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a -F'{name}\n\t{dir}\n\t{.mode}\n\t{.size}\n'
-Arcade - A-Z Uncommon Arcade Games.lpl
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{name}:\n\t{dir}\n\t{.mode}\n\t{.size}\n'
+Arcade - A-Z Uncommon Arcade Games.lpl:
         /home/tuncay/Desktop/My Files
         -rw-r--r--
         6.7 KB
 
-emojicherrypick
+emojicherrypick:
         /home/tuncay/Desktop/My Files
         drwxr-xr-x
         4.0 KB
 
-new.png
+new.png:
         /home/tuncay/Desktop/My Files
         -rw-r--r--
         71.1 KB
 
-playlists.zip
+playlists.zip:
         /home/tuncay/Desktop/My Files
         -rw-r--r--
         14.5 KB
+
 ```
 
-Or let's take the same commands and scramble the output structure entirely:
+Wanna have a format that is more familiar? Here we have added the mime type
+with {mime} as well, which works by looking into file content with standard
+Linux program `file`. It's called only once for all paths together, therefore
+this will not slowdown the script with many paths, even thousands.
 
 ```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode} {.size} {name}  ->  {dir}'
--rw-r--r-- 6.7 KB Arcade - A-Z Uncommon Arcade Games.lpl  ->  /home/tuncay/Desktop/My Files
-drwxr-xr-x 4.0 KB emojicherrypick  ->  /home/tuncay/Desktop/My Files
--rw-r--r-- 71.1 KB new.png  ->  /home/tuncay/Desktop/My Files
--rw-r--r-- 14.5 KB playlists.zip  ->  /home/tuncay/Desktop/My Files
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{mime}     \t{name}'
+-rw-r--r--      6.7 KB  us-ascii        Arcade - A-Z Uncommon Arcade Games.lpl
+drwxr-xr-x      4.0 KB  binary          emojicherrypick
+-rw-r--r--      71.1 KB binary          new.png
+-rw-r--r--      14.5 KB binary          playlists.zip
 ```
 
-We can also utilize the style commands to change color or effects. However we
-need to reset the settings at the end of the line, if we don't want it to spill
-over to the next lines. To illustrate the effects and difference, I'll show you
-a single screenshot with the output of multiple commands in one go:
+In `-F` option we can also use the various color and effects commands, such as
+`{yellow}` in example. Unlike in option `-s`, we have to put them in curly
+braces. But it is important to understand that we have to reset the color or
+entire style for the line, otherwise it will spill over to next line. Look at
+the screenshot for the output, to understand the differences:
 
 ```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode} {.size} {name}  ->  {dir}'
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode} {.size} {bold}{yellow}{name}  ->  {dir}'
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode} {.size} {bold}{yellow}{name}  ->  {dir}{default}'
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode} {.size} {bold}{yellow}{name}{/color}  ->  {dir}{default}'
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{name}'
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}'
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}{default}'
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}{/color}\t{name}{default}'
 # see img/bold_yellow.png
 ```
 
 ![screenshot: bold yellow style](img/bold_yellow.png)
 
-To display the time and date of last modification, use `{.mtime}`, or last change
-`{.ctime}` or for last access `{.atime}` in a human readable format:
+Time and date can be displayed with `{.atime}` for last access, `{.mtime}` for
+last modification and `{.ctime}` for last change in a human readable format.
 
 ```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{.mtime} \t{name}'
--rw-r--r--      6.7 KB  Sunday, October 23, 2022 02:07:30       Arcade - A-Z Uncommon Arcade Games.lpl
-drwxr-xr-x      4.0 KB  Wednesday, April 13, 2022 06:18:43      emojicherrypick
--rw-r--r--      71.1 KB Wednesday, April 10, 2024 07:13:06      new.png
--rw-r--r--      14.5 KB Saturday, May 04, 2024 04:40:03         playlists.zip
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{.mtime}  \t{name}'
+Sunday, October 23, 2022 02:07:30       Arcade - A-Z Uncommon Arcade Games.lpl
+Wednesday, April 13, 2022 06:18:43      emojicherrypick
+Wednesday, April 10, 2024 07:13:06      new.png
+Saturday, May 04, 2024 04:40:03         playlists.zip
 ```
 
-The time commands have also a special variant that allows custom format on
-their own, via
-[strftime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes)
-format codes. These additional arguments are separated by double colon ":" like
-in `{.mtime:arguments}`:
+Time commands have a special variant allowing for custom formatting. Their
+options are separated by double color, like this `{.mtime:options}`. The
+options are actually format codes interpreted by
+[strftime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes):
 
 ```bash
-$ cd ~/Desktop/My Files/
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{.mtime:%Y-%m}\t{name}'
--rw-r--r--      6.7 KB  2022-10 Arcade - A-Z Uncommon Arcade Games.lpl
-drwxr-xr-x      4.0 KB  2022-04 emojicherrypick
--rw-r--r--      71.1 KB 2024-04 new.png
--rw-r--r--      14.5 KB 2024-05 playlists.zip
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{.mtime:%Y/%m/%d}\t{name}'
+2022/10/23      Arcade - A-Z Uncommon Arcade Games.lpl
+2022/04/13      emojicherrypick
+2024/04/10      new.png
+2024/05/04      playlists.zip
 ```
 
 I hope this helps in understanding what this tool can do and if it is for you.
