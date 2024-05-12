@@ -476,13 +476,17 @@ class App:
         return entries
 
     def stylize_sep(self, source: str) -> str:
-        sep = str(self.sep)
+        if self.format:
+            origin_sep = "\x04"
+        else:
+            origin_sep = "/"
+
         if self.sep_style:
             source = source.replace(
-                "\x04", encode_style_codes(sep, str(self.sep_style), "0")
+                origin_sep, encode_style_codes(str(self.sep), str(self.sep_style), "0")
             )
         else:
-            source = unescape_slash(source, sep)
+            source = source.replace(origin_sep, str(self.sep))
         source += encode_style_codes("", "0")
         return source
 
