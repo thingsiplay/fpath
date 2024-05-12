@@ -505,11 +505,13 @@ An empty style as "" or {} is interpreted as reset.
         )
         for header, names in terminal_style_codes_table().items():
             if compact:
-                # print(f"{header}:", ", ".join(names.keys()), end="\n")
                 print(f"{header}:", ", ".join(names.keys()), end="\n")
             else:
-                print(f"{header}")
-                print("\t" + "\n\t".join(names.keys()), end="\n\n")
+                print(f"\n{header}")
+                keys = ""
+                for k in names.keys():
+                    keys += "\t{" + k + "}\n"
+                print(keys, end="")
         return
 
     def help_explain_fmt(self, compact: bool = False) -> None:
