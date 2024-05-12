@@ -67,6 +67,14 @@ class fmtPath:
         return self.work_path.exists()
 
 
+def escape_slash(source: str, sep: str):
+    return source.replace(sep, "\x04")
+
+
+def unescape_slash(source: str, sep: str):
+    return source.replace("\x04", sep)
+
+
 # Convert style code parts into a fully functional terminal code sequence.
 def encode_style_codes(text: str, start_code: str, end_code: str = "") -> str:
     if end_code == "":
@@ -264,8 +272,25 @@ class App:
         if not args.ignore_stdin and not stdin.isatty():
             input_paths.extend(stdin_lines())
 
+        self.sep = args.sep
+        if self.sep != "/" and self.sep != "":
+            self.sep = unescape_backslash_chars(self.sep)
+
+        self.style_codes = terminal_style_codes_table(flat=True)
+        if args.sep_style in self.style_codes:
+            self.sep_style = self.style_codes[args.sep_style]
+        else:
+            self.sep_style = None
+
         self.paths: list[fmtPath] = [
-            fmtPath(p, args.absolute, args.resolve, args.base, args.tilde, self.quotes)
+            fmtPath(
+                p,
+                args.absolute,
+                args.resolve,
+                args.base,
+                args.tilde,
+                self.quotes,
+            )
             for p in input_paths
         ]
 
@@ -292,16 +317,6 @@ class App:
         self.lineend = args.lineend
         if self.lineend != "\n" and self.lineend != "":
             self.lineend = unescape_backslash_chars(self.lineend)
-
-        self.sep = args.sep
-        if self.sep != "/" and self.sep != "":
-            self.sep = unescape_backslash_chars(self.sep)
-
-        self.style_codes = terminal_style_codes_table(flat=True)
-        if args.sep_style in self.style_codes:
-            self.sep_style = self.style_codes[args.sep_style]
-        else:
-            self.sep_style = None
 
         return
 
@@ -331,6 +346,7 @@ class App:
             return text.replace("\x02", "{").replace("\x03", "}")
 
         def escape(text: str) -> str:
+            text = escape_slash(text, "/")
             return text.replace("{", "\x02").replace("}", "\x03")
 
         def escape_and_quote(text: str) -> str:
@@ -461,12 +477,12 @@ class App:
 
     def stylize_sep(self, source: str) -> str:
         sep = str(self.sep)
-        if sep != "/":
-            source = source.replace("/", sep)
         if self.sep_style:
             source = source.replace(
-                sep, encode_style_codes(sep, str(self.sep_style), "0")
+                "\x04", encode_style_codes(sep, str(self.sep_style), "0")
             )
+        else:
+            source = unescape_slash(source, sep)
         source += encode_style_codes("", "0")
         return source
 
