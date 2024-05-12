@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from sys import exit, stdin
+from subprocess import Popen, PIPE
 from argparse import ArgumentParser
 from argparse import Namespace as ArgumentNamespace
 from pathlib import Path
@@ -8,8 +9,7 @@ from datetime import datetime
 from stat import filemode
 from re import finditer as regex_finditer
 from re import sub as regex_sub
-
-import mimetypes
+from hashlib import sha3_512
 
 
 class fmtPath:
@@ -178,8 +178,9 @@ def supported_fmt_commands() -> dict[str, str]:
         "stem": "file name without directory and extension",
         "ext": "single file extension after '.'",
         "exts": "all file extensions if more than one '.'",
-        "type": "known file type based on extension",
-        "mime": "known mime based on extension",
+        "file": "file type information based on file content",
+        "type": "short type based on file content",
+        "mime": "short mime based on file content",
         "owner": "name of owner from file",
         "group": "name of group from file owner",
         ".stat": "unprocessed file stat results",
@@ -212,13 +213,42 @@ def unescape_backslash_chars(source: str):
     return source
 
 
+def file(path: list[str], arg: str | None = None):
+    cmd = ["file", "--brief"]
+    if arg:
+        cmd.append(arg)
+    cmd.append("--")
+    cmd.extend(path)
+    output = Popen(cmd, stdout=PIPE, text=True).communicate()[0]
+    return output.strip().split("\n")
+
+
+def hash(source: str):
+    h = sha3_512()
+    byte_posix = source.encode()
+    h.update(byte_posix)
+    return h.hexdigest()
+
+
+# TODO: I'm not sure about correct types produced by hexdigest()
+def filetypes(source, hash_entries, arg: str | None = None):
+    all_paths = [p.path.as_posix() for p in hash_entries.values()]
+    filetypes = dict(zip(hash_entries.keys(), file(all_paths, arg)))
+
+    output = []
+    for fmt in source:
+        for id, p in filetypes.items():
+            if id in fmt:
+                source = fmt.replace(id, p)
+                output.append(source)
+    return output
+
+
 class App:
     name: str = "fpath"
     version: str = "0.1"
 
     def __init__(self, args: ArgumentNamespace) -> None:
-        mimetypes.init()
-
         self.print_version: bool = args.version
         self.paths: list[fmtPath] = []
 
@@ -316,7 +346,10 @@ class App:
         # so they cannot interfere with paths.
 
         entries = []
-        for entry in self.paths:
+        hash_file_entries = {}
+        hash_mime_entries = {}
+        hash_type_entries = {}
+        for index, entry in enumerate(self.paths):
             fmt: str = self.format
 
             fmt = unescape_backslash_chars(fmt)
@@ -324,36 +357,44 @@ class App:
             fmt = fmt.replace(r"\{", "\x02")
             fmt = fmt.replace(r"\}", "\x03")
 
+            path = entry.path
+            parts = path.parts
+            posix = path.as_posix()
+
             fmt = fmt.replace("{origin}", escape(entry.origin))
-            parts = entry.path.parts
             fmt = fmt.replace("{list}", escape_and_quote(str(parts)))
-            fmt = fmt.replace("{path}", escape_and_quote(entry.path.as_posix()))
-            fmt = fmt.replace("{root}", escape_and_quote(entry.path.anchor))
-            fmt = fmt.replace("{uri}", escape_and_quote(entry.path.absolute().as_uri()))
-            fmt = fmt.replace("{dir}", escape_and_quote(entry.path.parent.as_posix()))
-            fmt = fmt.replace("{dirname}", escape_and_quote(entry.path.parent.name))
-            fmt = fmt.replace("{name}", escape_and_quote(entry.path.name))
-            fmt = fmt.replace("{stem}", escape_and_quote(entry.path.stem))
-            fmt = fmt.replace("{ext}", escape_and_quote(entry.path.suffix))
-            fmt = fmt.replace("{exts}", escape_and_quote("".join(entry.path.suffixes)))
+            fmt = fmt.replace("{path}", escape_and_quote(posix))
+            fmt = fmt.replace("{root}", escape_and_quote(path.anchor))
+            fmt = fmt.replace("{uri}", escape_and_quote(path.absolute().as_uri()))
+            fmt = fmt.replace("{dir}", escape_and_quote(path.parent.as_posix()))
+            fmt = fmt.replace("{dirname}", escape_and_quote(path.parent.name))
+            fmt = fmt.replace("{name}", escape_and_quote(path.name))
+            fmt = fmt.replace("{stem}", escape_and_quote(path.stem))
+            fmt = fmt.replace("{ext}", escape_and_quote(path.suffix))
+            fmt = fmt.replace("{exts}", escape_and_quote("".join(path.suffixes)))
+
+            if "{file}" in fmt:
+                h = hash(posix + f"{index}file")
+                hash_file_entries[h] = entry
+                fmt = fmt.replace("{file}", h)
+
+            if "{type}" in fmt:
+                h = hash(posix + f"{index}type")
+                hash_type_entries[h] = entry
+                fmt = fmt.replace("{type}", h)
+
+            if "{mime}" in fmt:
+                h = hash(posix + f"{index}mime")
+                hash_mime_entries[h] = entry
+                fmt = fmt.replace("{mime}", h)
 
             try:
-                fmt = fmt.replace("{type}", mimetypes.encodings_map[entry.path.suffix])
-            except KeyError:
-                fmt = fmt.replace("{type}", "")
-
-            try:
-                fmt = fmt.replace("{mime}", mimetypes.types_map[entry.path.suffix])
-            except KeyError:
-                fmt = fmt.replace("{mime}", "")
-
-            try:
-                fmt = fmt.replace("{owner}", entry.path.owner())
+                fmt = fmt.replace("{owner}", path.owner())
             except (KeyError, FileNotFoundError):
                 fmt = fmt.replace("{owner}", "")
 
             try:
-                fmt = fmt.replace("{group}", entry.path.group())
+                fmt = fmt.replace("{group}", path.group())
             except (KeyError, FileNotFoundError):
                 fmt = fmt.replace("{group}", "")
 
@@ -407,6 +448,14 @@ class App:
                         fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
 
             entries.append(unescape(fmt))
+
+        if hash_file_entries:
+            entries = filetypes(entries, hash_file_entries)
+        if hash_type_entries:
+            entries = filetypes(entries, hash_type_entries, "--mime-type")
+        if hash_mime_entries:
+            entries = filetypes(entries, hash_mime_entries, "--mime-encoding")
+
         return entries
 
     def stylize_sep(self, source: str) -> str:
@@ -726,7 +775,8 @@ def main():
     output = ""
     for path in app:
         output += path
-    print(app.stylize_sep(output), end="")
+    output = app.stylize_sep(output)
+    print(output, end="")
 
     return 0
 
