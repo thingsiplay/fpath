@@ -310,9 +310,16 @@ $ find ./* -maxdepth 0 | fpath -a -F'{.mtime:%Y/%m/%d}\t{name}'
 2024/05/04      playlists.zip
 ```
 
-### Control sequences overview
+There are so many more commands and functionality. Such as slices in form of
+`{start:end}` even supporting negative numbers, to get any part of the path,
+such as `{-1:}` to access file name or `{3:5}` to get fourth and fifth element.
+No, this is not at typo. Counting starts by 0 and the end index is where to
+stop, without including it. Just test and play around with it to understand.
 
 I hope this helps in understanding what this tool can do and if it is for you.
+
+### Control sequences overview
+
 Here is a quick listing of the supported control sequences with curly braces
 such as `{red}` usable in `-F`. Use `fpath --help`, `fpath --explain fmt`,
 `fpath --explain fmt_compact`, `fpath --explain style` or `fpath --explain
@@ -329,7 +336,8 @@ style_compact` to display an explanation and list all supported commands.
 {STYLE}: name of the style like 'green' or 'bold'
 {origin}: original input data before processing
 {list}: path broken up into individual parts
-{0-9}: access each part of a path with numbers
+{0}..{9}: direct access each part with index, from {0} to {9}
+{-start:end}: slice from any to any index, including negative numbers
 {path}: path as posix
 {root}: drive and root if any
 {uri}: path as file URI
@@ -356,19 +364,38 @@ style_compact` to display an explanation and list all supported commands.
 {.mb}: file size in megabytes
 {.atime}: last access timestamp in readable format
 {.mtime}: last modified timestamp in readable format
-{.ctime}: lchanged timestamp in readable format
+{.ctime}: last changed timestamp in readable format
 {.atime:args:} custom strftime format codes
 {.mtime:args}: custom strftime format codes
 {.ctime:args}: custom strftime format codes
 
-global: {}, {reset}, {default}
-effects: {bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike}, {blink}, {reverse}, {hide}
-effects off: {/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline}, {/reverse}, {/strike}, {/blink}, {/hide}
-foreground colors: {dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
-bright foreground colors: {bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
-background colors: {bg.dark}, {bg.white}, {bg.red}, {bg.green}, {bg.blue}, {bg.yellow}, {bg.magenta}, {bg.cyan}
-bright background colors: {bg.bdark}, {bg.bwhite}, {bg.bred}, {bg.bgreen}, {bg.bblue}, {bg.byellow}, {bg.bmagenta}, {bg.bcyan}
-colors off: {/color}, {/bg.color}
+global:
+    {}, {reset}, {default}
+
+effects:
+    {bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike},
+    {blink}, {reverse}, {hide}
+
+effects off:
+    {/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline},
+    {/reverse}, {/strike}, {/blink}, {/hide}
+
+foreground colors:
+    {dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
+
+bright foreground colors:
+    {bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
+
+background colors:
+    {bg.dark}, {bg.white}, {bg.red}, {bg.green}, {bg.blue}, {bg.yellow},
+    {bg.magenta}, {bg.cyan}
+
+bright background colors:
+    {bg.bdark}, {bg.bwhite}, {bg.bred}, {bg.bgreen}, {bg.bblue}, {bg.byellow},
+    {bg.bmagenta}, {bg.bcyan}
+
+colors off:
+    {/color}, {/bg.color}
 ```
 
 Have a great rest of your day.
