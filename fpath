@@ -9,6 +9,7 @@ from datetime import datetime
 from stat import filemode
 from re import finditer as regex_finditer
 from re import sub as regex_sub
+from re import compile as re_compile
 from hashlib import sha3_512
 
 
@@ -177,7 +178,8 @@ def supported_fmt_commands() -> dict[str, str]:
         "STYLE": "name of the style like 'green' or 'bold'",
         "origin": "original input data before processing",
         "list": "path broken up into individual parts",
-        "0-9": "access each part of a path with numbers",
+        "0-9": "direct access each part with index, from {0} to {9}",
+        "-start:end": "slice from any to any index, including negative numbers",
         "path": "path as posix",
         "root": "drive and root if any",
         "uri": "path as file URI",
@@ -362,6 +364,9 @@ class App:
         # Also the escape sequences with backslash should be replaced first,
         # so they cannot interfere with paths.
 
+        # For use with slices like {:-3}
+        regex_index = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
+
         entries = []
         hash_file_entries = {}
         hash_mime_entries = {}
@@ -450,19 +455,42 @@ class App:
                     )
 
             if "{" in fmt:
-                p_len = len(parts)
-                max_fmt_num = 10
-                # {0}, {1}, {2} ... {9}
-                for i in range(max_fmt_num):
-                    if i == max_fmt_num:
-                        break
-                    iseq = "{" + str(i) + "}"
-                    if i >= p_len:
-                        fmt = fmt.replace(iseq, escape_and_quote(""))
-                        # note: alternatively get last element instead empty.
-                        # fmt = fmt.replace(iseq, escape_and_quote(parts[p_len - 1]))
-                    else:
-                        fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
+                match = regex_index.findall(fmt)
+                if match:
+                    for i in match:
+
+                        if i[0] == "":
+                            start = None
+                        else:
+                            start = int(i[0])
+                        if i[1] == "":
+                            end = None
+                        else:
+                            end = int(i[1])
+                        slice = parts[start:end]
+
+                        if i[0] == "":
+                            start = ""
+                        if i[1] == "":
+                            end = ""
+                        key = "{" + f"{start}:{end}" + "}"
+
+                        fmt = fmt.replace(
+                            key,
+                            escape_and_quote("/".join(slice).replace("//", "/", 1)),
+                        )
+                else:
+                    p_len = len(parts)
+                    max_fmt_num = 10
+                    # {0}, {1}, {2} ... {9}
+                    for i in range(max_fmt_num):
+                        if i == max_fmt_num:
+                            break
+                        iseq = "{" + str(i) + "}"
+                        if i >= p_len:
+                            fmt = fmt.replace(iseq, escape_and_quote(""))
+                        else:
+                            fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
 
             entries.append(unescape(fmt))
 
@@ -543,13 +571,22 @@ reset or default at the end of the command chain, otherwise it will spill over
 to the other lines. -F will stop printing paths by default and give full
 control with these control sequences.
 
-Very few commands even support arguments on their own for even more
-customization. Those have the format {command:arguments}.
-
     -F{name}
     -F'{uri}\n\t{.size}\n\t{.atime}\n\t{.mode}\n'
     -F'{byellow}{name}{/color}  in  {dim}{cyan}{dirname}{default}'
-    -F'{.atime:%Y-%m-%d} {name}'
+
+Very few commands even support arguments on their own for even more
+customization. Those have the format {command:arguments}. The time commands
+support custom formatting in form of {.atime:strftime} .
+
+    -F'{.atime:%Y-%m-%d}'
+
+Slices are two numbers {2:3} to specify start and end index of a path. Negative
+numbers will count from end of path instead start, like {-1:} is the name of
+the file and {0:} starts from first element. An empty value means rest of the
+path until last element. Values higher than 9 are also allowed with slices.
+
+    -F'{3:-1}'
 
 All style commands are also available. List them with -H style.
 
