@@ -383,17 +383,28 @@ class App:
             parts = path.parts
             posix = path.as_posix()
 
-            fmt = fmt.replace("{origin}", escape(entry.origin))
-            fmt = fmt.replace("{list}", escape_and_quote(str(parts)))
-            fmt = fmt.replace("{path}", escape_and_quote(posix))
-            fmt = fmt.replace("{root}", escape_and_quote(path.anchor))
-            fmt = fmt.replace("{uri}", escape_and_quote(path.absolute().as_uri()))
-            fmt = fmt.replace("{dir}", escape_and_quote(path.parent.as_posix()))
-            fmt = fmt.replace("{dirname}", escape_and_quote(path.parent.name))
-            fmt = fmt.replace("{name}", escape_and_quote(path.name))
-            fmt = fmt.replace("{stem}", escape_and_quote(path.stem))
-            fmt = fmt.replace("{ext}", escape_and_quote(path.suffix))
-            fmt = fmt.replace("{exts}", escape_and_quote("".join(path.suffixes)))
+            if "{origin}" in fmt:
+                fmt = fmt.replace("{origin}", escape(entry.origin))
+            if "{list}" in fmt:
+                fmt = fmt.replace("{list}", escape_and_quote(str(parts)))
+            if "{path}" in fmt:
+                fmt = fmt.replace("{path}", escape_and_quote(posix))
+            if "{root}" in fmt:
+                fmt = fmt.replace("{root}", escape_and_quote(path.anchor))
+            if "{uri}" in fmt:
+                fmt = fmt.replace("{uri}", escape_and_quote(path.absolute().as_uri()))
+            if "{dir}" in fmt:
+                fmt = fmt.replace("{dir}", escape_and_quote(path.parent.as_posix()))
+            if "{dirname}" in fmt:
+                fmt = fmt.replace("{dirname}", escape_and_quote(path.parent.name))
+            if "{name}" in fmt:
+                fmt = fmt.replace("{name}", escape_and_quote(path.name))
+            if "{stem}" in fmt:
+                fmt = fmt.replace("{stem}", escape_and_quote(path.stem))
+            if "{ext}" in fmt:
+                fmt = fmt.replace("{ext}", escape_and_quote(path.suffix))
+            if "{exts}" in fmt:
+                fmt = fmt.replace("{exts}", escape_and_quote("".join(path.suffixes)))
 
             if "{file}" in fmt:
                 h = hash(posix + f"{index}file")
@@ -410,15 +421,17 @@ class App:
                 hash_mime_entries[h] = entry
                 fmt = fmt.replace("{mime}", h)
 
-            try:
-                fmt = fmt.replace("{owner}", path.owner())
-            except (KeyError, FileNotFoundError):
-                fmt = fmt.replace("{owner}", "")
+            if "{owner}" in fmt:
+                try:
+                    fmt = fmt.replace("{owner}", path.owner())
+                except (KeyError, FileNotFoundError):
+                    fmt = fmt.replace("{owner}", "")
 
-            try:
-                fmt = fmt.replace("{group}", path.group())
-            except (KeyError, FileNotFoundError):
-                fmt = fmt.replace("{group}", "")
+            if "{group}" in fmt:
+                try:
+                    fmt = fmt.replace("{group}", path.group())
+                except (KeyError, FileNotFoundError):
+                    fmt = fmt.replace("{group}", "")
 
             if "{." in fmt:
                 # https://docs.python.org/3/library/os.html#os.stat_result
@@ -427,22 +440,37 @@ class App:
                 except FileNotFoundError:
                     fmt = regex_sub(r"{\.[^{}]+?}", "", fmt)
                 else:
-                    fmt = fmt.replace("{.stat}", str(st).removeprefix("os.stat_result"))
-                    if "{." in fmt:
+                    if "{.st" in fmt:
+                        fmt = fmt.replace(
+                            "{.stat}", str(st).removeprefix("os.stat_result")
+                        )
+                    if "{.mo" in fmt:
                         fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
+                    if "{.de" in fmt:
                         fmt = fmt.replace("{.dev}", str(st.st_dev))
+                    if "{.ui" in fmt:
                         fmt = fmt.replace("{.uid}", str(st.st_uid))
+                    if "{.gi" in fmt:
                         fmt = fmt.replace("{.gid}", str(st.st_gid))
+                    if "{.nl" in fmt:
                         fmt = fmt.replace("{.nlink}", size(st.st_nlink))
+                    if "{.si" in fmt:
                         fmt = fmt.replace("{.size}", size(st.st_size))
+                    if "{.b}" in fmt:
                         fmt = fmt.replace("{.b}", str(st.st_size))
+                    if "{.kb}" in fmt:
                         fmt = fmt.replace("{.kb}", str(round(st.st_size / 1024, 1)))
+                    if "{.mb}" in fmt:
                         fmt = fmt.replace(
                             "{.mb}", str(round(st.st_size / 1024 / 1024, 1))
                         )
+                    if "{.atime}" in fmt:
                         fmt = fmt.replace("{.atime}", time(st.st_atime))
+                    if "{.mtime}" in fmt:
                         fmt = fmt.replace("{.mtime}", time(st.st_mtime))
+                    if "{.ctme}" in fmt:
                         fmt = fmt.replace("{.ctime}", time(st.st_ctime))
+                    if "{." in fmt:
                         if "time:" in fmt:
                             fmt = self.time_custom_arg(st.st_atime, "a", fmt)
                             fmt = self.time_custom_arg(st.st_mtime, "m", fmt)
@@ -455,7 +483,10 @@ class App:
                     )
 
             if "{" in fmt:
-                match = regex_index.findall(fmt)
+                if ":" in fmt:
+                    match = regex_index.findall(fmt)
+                else:
+                    match = None
                 if match:
                     for i in match:
 
