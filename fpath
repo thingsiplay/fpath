@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 from argparse import Namespace as ArgumentNamespace
 from pathlib import Path
 from datetime import datetime
-from stat import filemode
+from stat import filemode, S_ISDIR, S_ISREG, S_ISLNK
 from re import finditer as regex_finditer
 from re import sub as regex_sub
 from re import compile as re_compile
@@ -200,6 +200,9 @@ def supported_fmt_commands() -> dict[str, str]:
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
         ".perm": "same as {.mode}",
+        ".isdir": "1=if a directory, 0=if not",
+        ".isreg": "1=if a regular file, 0=if not",
+        ".islnk": "1=if a symbolic link, 0=if not",
         ".dev": "device id where this file resides",
         ".uid": "user id number from file owner",
         ".gid": "group id number from file owner",
@@ -465,6 +468,12 @@ class App:
                         fmt = fmt.replace("{.perm}", "{.mode}")
                     if "{.mo" in fmt:
                         fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
+                    if "{.isd" in fmt:
+                        fmt = fmt.replace("{.isdir}", str(int(S_ISDIR(st.st_mode))))
+                    if "{.isr" in fmt:
+                        fmt = fmt.replace("{.isreg}", str(int(S_ISREG(st.st_mode))))
+                    if "{.isl" in fmt:
+                        fmt = fmt.replace("{.islnk}", str(int(S_ISLNK(st.st_mode))))
                     if "{.de" in fmt:
                         fmt = fmt.replace("{.dev}", str(st.st_dev))
                     if "{.ui" in fmt:

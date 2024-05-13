@@ -377,6 +377,9 @@ fpath --explain style_compact
 {.stat}: unprocessed file stat results
 {.mode}: file permissions
 {.perm}: same as {.mode}
+{.isdir}: 1=if a directory, 0=if not
+{.isreg}: 1=if a regular file, 0=if not
+{.islnk}: 1=if a symbolic link, 0=if not
 {.dev}: device id where this file resides
 {.uid}: user id number from file owner
 {.gid}: group id number from file owner
