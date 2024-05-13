@@ -261,7 +261,7 @@ def filetypes(source, hash_entries, arg: str | None = None):
 
 class App:
     name: str = "fpath"
-    version: str = "0.3"
+    version: str = "0.4"
 
     def __init__(self, args: ArgumentNamespace) -> None:
         self.print_version: bool = args.version
