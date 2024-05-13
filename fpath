@@ -282,8 +282,13 @@ class App:
         if self.sep != "/" and self.sep != "":
             self.sep = unescape_backslash_chars(self.sep)
 
+        # Determines if style codes with terminal color was used in -s or -F.
+        # Should be set to True whenever it is used.
+        self.with_style_codes = False
+
         self.style_codes = terminal_style_codes_table(flat=True)
         if args.sep_style in self.style_codes:
+            self.with_style_codes = True
             self.sep_style = self.style_codes[args.sep_style]
         else:
             self.sep_style = None
@@ -493,9 +498,10 @@ class App:
             # styles: {red}
             if "{" in fmt:
                 for name, code in self.style_codes.items():
-                    fmt = fmt.replace(
-                        "{" + name + "}", encode_style_codes("", str(code))
-                    )
+                    style_cmd = "{" + name + "}"
+                    if style_cmd in fmt:
+                        self.with_style_codes = True
+                        fmt = fmt.replace(style_cmd, encode_style_codes("", str(code)))
 
             # index and slices
             if "{" in fmt:
@@ -563,7 +569,9 @@ class App:
             )
         else:
             source = source.replace(origin_sep, str(self.sep))
-        source += encode_style_codes("", "0")
+
+        if self.with_style_codes:
+            source += encode_style_codes("", "0")
         return source
 
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
