@@ -310,6 +310,65 @@ $ find ./* -maxdepth 0 | fpath -a -F'{.mtime:%Y/%m/%d}\t{name}'
 2024/05/04      playlists.zip
 ```
 
+### Control sequences overview
+
 I hope this helps in understanding what this tool can do and if it is for you.
+Here is a quick listing of the supported control sequences with curly braces
+such as `{red}` usable in `-F`. Use `fpath --help`, `fpath --explain fmt`,
+`fpath --explain fmt_compact`, `fpath --explain style` or `fpath --explain
+style_compact` to display an explanation and list all supported commands.
+
+```
+"\\": literal single slash "\"
+"\n": newline
+"\t": tab
+"\r": carriage return
+"\b": backspace
+"\f": form feed
+
+{STYLE}: name of the style like 'green' or 'bold'
+{origin}: original input data before processing
+{list}: path broken up into individual parts
+{0-9}: access each part of a path with numbers
+{path}: path as posix
+{root}: drive and root if any
+{uri}: path as file URI
+{dir}: parent directory path
+{dirname}: parent directory name without path
+{name}: file name without directory
+{stem}: file name without directory and extension
+{ext}: single file extension after '.'
+{exts}: all file extensions if more than one '.'
+{file}: file type information based on file content
+{type}: short type based on file content
+{mime}: short mime based on file content
+{owner}: name of owner from file
+{group}: name of group from file owner
+{.stat}: unprocessed file stat results
+{.mode}: file permissions
+{.dev}: device id where this file resides
+{.uid}: user id number from file owner
+{.gid}: group id number from file owner
+{.nlink}: number of hard links on filesystem
+{.size}: human readable format of file size
+{.b}: file size in bytes
+{.kb}: file size in kilobytes
+{.mb}: file size in megabytes
+{.atime}: last access timestamp in readable format
+{.mtime}: last modified timestamp in readable format
+{.ctime}: lchanged timestamp in readable format
+{.atime:args:} custom strftime format codes
+{.mtime:args}: custom strftime format codes
+{.ctime:args}: custom strftime format codes
+
+global: {}, {reset}, {default}
+effects: {bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike}, {blink}, {reverse}, {hide}
+effects off: {/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline}, {/reverse}, {/strike}, {/blink}, {/hide}
+foreground colors: {dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
+bright foreground colors: {bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
+background colors: {bg.dark}, {bg.white}, {bg.red}, {bg.green}, {bg.blue}, {bg.yellow}, {bg.magenta}, {bg.cyan}
+bright background colors: {bg.bdark}, {bg.bwhite}, {bg.bred}, {bg.bgreen}, {bg.bblue}, {bg.byellow}, {bg.bmagenta}, {bg.bcyan}
+colors off: {/color}, {/bg.color}
+```
 
 Have a great rest of your day.
