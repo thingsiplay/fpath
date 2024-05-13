@@ -32,7 +32,7 @@ of files/paths as input.
 
 ## Installation
 
-This is a Python script. It is developed for Linux and has external library
+This is a Python script. It is developed for Linux and has no external library
 dependencies from Python. Certain commands make use of the standard Linux
 program `file` in a sub shell process. Just download and give it the executable
 bit.
@@ -88,9 +88,9 @@ detected and removed. Leading tilde character is translated into the users home
 directory. With options all of these default processing can be changed.
 
 The stdin can be ignored with option `-z`. And `--` tells the script to stop
-processing options and accept anything that comes after the double dash as path
-input files rather than options. Let's see how all of this works with a series
-of simple examples:
+processing options and accept anything that comes after the double dash as
+input file paths, rather than options. Let's see how all of this works with a
+series of simple examples.
 
 Output from `ls` will include quotes for paths with spaces:
 
@@ -334,9 +334,15 @@ I hope this helps in understanding what this tool can do and if it is for you.
 ### Control sequences overview
 
 Here is a quick listing of the supported control sequences with curly braces
-such as `{red}` usable in `-F`. Use `fpath --help`, `fpath --explain fmt`,
-`fpath --explain fmt_compact`, `fpath --explain style` or `fpath --explain
-style_compact` to display an explanation and list all supported commands.
+such as `{red}` usable in `-F`. Display an explanation and list all supported
+commands with `-explain` option:
+
+```bash
+fpath --explain fmt
+fpath --explain fmt_compact
+fpath --explain style
+fpath --explain style_compact
+```
 
 ```
 "\\": literal single slash "\"
@@ -360,9 +366,9 @@ style_compact` to display an explanation and list all supported commands.
 {stem}: file name without directory and extension
 {ext}: single file extension after '.'
 {exts}: all file extensions if more than one '.'
-{file}: file type information based on file content
-{type}: short type based on file content
-{mime}: short mime based on file content
+{file}: file type information based on file content (slow)
+{type}: short type based on file content (slow)
+{mime}: short mime based on file content (slow)
 {owner}: name of owner from file
 {group}: name of group from file owner
 {.stat}: unprocessed file stat results
@@ -383,32 +389,32 @@ style_compact` to display an explanation and list all supported commands.
 {.ctime:args}: custom strftime format codes
 
 global:
-    {}, {reset}, {default}
+{}, {reset}, {default}
 
 effects:
-    {bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike},
-    {blink}, {reverse}, {hide}
+{bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike},
+{blink}, {reverse}, {hide}
 
 effects off:
-    {/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline},
-    {/reverse}, {/strike}, {/blink}, {/hide}
+{/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline},
+{/reverse}, {/strike}, {/blink}, {/hide}
 
 foreground colors:
-    {dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
+{dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
 
 bright foreground colors:
-    {bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
+{bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
 
 background colors:
-    {bg.dark}, {bg.white}, {bg.red}, {bg.green}, {bg.blue}, {bg.yellow},
-    {bg.magenta}, {bg.cyan}
+{bg.dark}, {bg.white}, {bg.red}, {bg.green}, {bg.blue}, {bg.yellow},
+{bg.magenta}, {bg.cyan}
 
 bright background colors:
-    {bg.bdark}, {bg.bwhite}, {bg.bred}, {bg.bgreen}, {bg.bblue}, {bg.byellow},
-    {bg.bmagenta}, {bg.bcyan}
+{bg.bdark}, {bg.bwhite}, {bg.bred}, {bg.bgreen}, {bg.bblue}, {bg.byellow},
+{bg.bmagenta}, {bg.bcyan}
 
 colors off:
-    {/color}, {/bg.color}
+{/color}, {/bg.color}
 ```
 
 Have a great rest of your day.

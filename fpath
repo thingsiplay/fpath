@@ -189,9 +189,9 @@ def supported_fmt_commands() -> dict[str, str]:
         "stem": "file name without directory and extension",
         "ext": "single file extension after '.'",
         "exts": "all file extensions if more than one '.'",
-        "file": "file type information based on file content",
-        "type": "short type based on file content",
-        "mime": "short mime based on file content",
+        "file": "file type information based on file content (slow)",
+        "type": "short type based on file content (slow)",
+        "mime": "short mime based on file content (slow)",
         "owner": "name of owner from file",
         "group": "name of group from file owner",
         ".stat": "unprocessed file stat results",
@@ -433,6 +433,7 @@ class App:
                 except (KeyError, FileNotFoundError):
                     fmt = fmt.replace("{group}", "")
 
+            # stats
             if "{." in fmt:
                 # https://docs.python.org/3/library/os.html#os.stat_result
                 try:
@@ -476,18 +477,21 @@ class App:
                             fmt = self.time_custom_arg(st.st_mtime, "m", fmt)
                             fmt = self.time_custom_arg(st.st_ctime, "c", fmt)
 
+            # styles: {red}
             if "{" in fmt:
                 for name, code in self.style_codes.items():
                     fmt = fmt.replace(
                         "{" + name + "}", encode_style_codes("", str(code))
                     )
 
+            # index and slices
             if "{" in fmt:
                 if ":" in fmt:
                     match = regex_index.findall(fmt)
                 else:
                     match = None
                 if match:
+                    # slices: {2:-1}
                     for i in match:
 
                         if i[0] == "":
@@ -511,9 +515,9 @@ class App:
                             escape_and_quote("/".join(slice).replace("//", "/", 1)),
                         )
                 else:
+                    # index: {0}, {1}, {2} ... {9}
                     p_len = len(parts)
                     max_fmt_num = 10
-                    # {0}, {1}, {2} ... {9}
                     for i in range(max_fmt_num):
                         if i == max_fmt_num:
                             break
