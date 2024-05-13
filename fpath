@@ -534,8 +534,9 @@ class App:
         return source
 
     def help_explain_style(self, compact: bool = False) -> None:
-        print(
-            r"""List of style names
+        if not compact:
+            print(
+                r"""List of style names
 
 -s can use only one style, while -F can mix and match multiple styles. Using
 styles with -s option will overwrite color and style changes from -F.
@@ -550,7 +551,7 @@ An empty style as "" or {} is interpreted as reset.
     -F{red}
     -F"Hyper {blink}HYPER{/blink}{default}"
 """
-        )
+            )
         for header, names in terminal_style_codes_table().items():
             if compact:
                 print(f"{header}:", ", ".join(names.keys()), end="\n")
@@ -563,8 +564,9 @@ An empty style as "" or {} is interpreted as reset.
         return
 
     def help_explain_fmt(self, compact: bool = False) -> None:
-        print(
-            r"""List of format commands
+        if not compact:
+            print(
+                r"""List of format commands
 
 -F requires the names between in curly braces to be recognized. Also one should
 reset or default at the end of the command chain, otherwise it will spill over
@@ -601,7 +603,7 @@ meaning:
     "\f" to form feed
 
 """
-        )
+            )
         for key, value in supported_fmt_commands().items():
             if compact:
                 print(f"{key}:", value)
