@@ -353,6 +353,14 @@ fpath --explain style_compact
 "\f": form feed
 
 {STYLE}: name of the style like 'green' or 'bold'
+center:num: center text by padding with NUM * space
+ljust:num: left justify text by padding with NUM * space
+rjust:num: right justify text by padding with NUM * space
+fill:num: left fill with '0', leading +- sign is preserved
+/center: end marker for center
+/ljust: end marker for ljust
+/rjust: end marker for rjust
+/fill: end marker for fill
 {origin}: original input data before processing
 {list}: path broken up into individual parts
 {0}..{9}: direct access each part with index, from {0} to {9}

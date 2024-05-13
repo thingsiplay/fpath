@@ -176,6 +176,14 @@ def terminal_style_codes_table(
 def supported_fmt_commands() -> dict[str, str]:
     return {
         "STYLE": "name of the style like 'green' or 'bold'",
+        "center:num": "center text by padding with NUM * space",
+        "ljust:num": "left justify text by padding with NUM * space",
+        "rjust:num": "right justify text by padding with NUM * space",
+        "fill:num": "left fill with '0', leading +- sign is preserved",
+        "/center": "end marker for center",
+        "/ljust": "end marker for ljust",
+        "/rjust": "end marker for rjust",
+        "/fill": "end marker for fill",
         "origin": "original input data before processing",
         "list": "path broken up into individual parts",
         "0..9": "direct access each part with index, from {0} to {9}",
@@ -376,8 +384,11 @@ class App:
         # Also the escape sequences with backslash should be replaced first,
         # so they cannot interfere with paths.
 
-        # For use with slices like {:-3}
-        regex_index = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
+        re_slice = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
+        re_rjust = re_compile(r"{rjust:([0-9]+?)}(.*?){/rjust}")
+        re_ljust = re_compile(r"{ljust:([0-9]+?)}(.*?){/ljust}")
+        re_center = re_compile(r"{center:([0-9]+?)}(.*?){/center}")
+        re_fill = re_compile(r"{fill:([0-9]+?)}(.*?){/fill}")
 
         entries = []
         hash_file_entries = {}
@@ -515,7 +526,7 @@ class App:
             # index and slices
             if "{" in fmt:
                 if ":" in fmt:
-                    match = regex_index.findall(fmt)
+                    match = re_slice.findall(fmt)
                 else:
                     match = None
                 if match:
@@ -554,6 +565,46 @@ class App:
                             fmt = fmt.replace(iseq, escape_and_quote(""))
                         else:
                             fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
+
+            if "{rjust:" in fmt:
+                for m in re_rjust.findall(fmt):
+                    count = m[0]
+                    content = m[1]
+                    fmt = fmt.replace(
+                        "{rjust:" + count + "}" + content + "{/rjust}",
+                        content.rjust(int(count), " "),
+                        1,
+                    )
+
+            if "{ljust:" in fmt:
+                for m in re_ljust.findall(fmt):
+                    count = m[0]
+                    content = m[1]
+                    fmt = fmt.replace(
+                        "{ljust:" + count + "}" + content + "{/ljust}",
+                        content.ljust(int(count), " "),
+                        1,
+                    )
+
+            if "{center:" in fmt:
+                for m in re_center.findall(fmt):
+                    count = m[0]
+                    content = m[1]
+                    fmt = fmt.replace(
+                        "{center:" + count + "}" + content + "{/center}",
+                        content.center(int(count), " "),
+                        1,
+                    )
+
+            if "{fill:" in fmt:
+                for m in re_fill.findall(fmt):
+                    count = m[0]
+                    content = m[1]
+                    fmt = fmt.replace(
+                        "{fill:" + count + "}" + content + "{/fill}",
+                        content.zfill(int(count)),
+                        1,
+                    )
 
             entries.append(unescape(fmt))
 
@@ -654,6 +705,15 @@ the file and {0:} starts from first element. An empty value means rest of the
 path until last element. Values higher than 9 are also allowed with slices.
 
     -F'{3:-1}'
+
+Fill type of commands have a start and end marker, and a number to define how
+long the marked area should be. {center:15}text{/center} would fill both sides
+with space until the area is 15 characters long. Similararly {ljust:num} and
+{rjust:num} work for left and right side respectively. There is also
+{fill:num}, which will just fill the left side with '0', and respect any +-
+prefix sign. BTW, same kind of fill command should not be nested. 
+
+    -F{fill:5}{/fill}{center:70}{.mode}{/center}
 
 All style commands are also available. List them with -H style.
 
