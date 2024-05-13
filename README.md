@@ -29,8 +29,10 @@ when needed.
 
 ## Installation
 
-This is a Python script. It is developed for Linux and has no dependencies,
-other than Python itself. Just download and give it the executable bit.
+This is a Python script. It is developed for Linux and has external library
+dependencies from Python. Certain commands make use of the standard Linux
+program `file` in a sub shell process. Just download and give it the executable
+bit.
 
 ```bash
 git clone https://github.com/thingsiplay/fpath
@@ -59,6 +61,23 @@ The usage is pretty simple:
 path... | fpath [options] -- [path...]
 ```
 
+### Help
+
+List all supported options with `-h` or `--help` option:
+
+```bash
+fpath --help
+```
+
+List all supported style and format sub commands with `-H` or `--explain`:
+
+```bash
+fpath --explain fmt
+fpath --explain style
+```
+
+### Basics
+
 By default stdin from a piped process is parsed as list of paths split by
 newline. Optionally paths can be given as arguments too. All input paths are
 output to stdout. Single and double quotes surrounding a path is automatically
@@ -67,11 +86,8 @@ directory. With options all of these default processing can be changed.
 
 The stdin can be ignored with option `-z`. And `--` tells the script to stop
 processing options and accept anything that comes after the double dash as path
-input files rather than options.
-
-Let's see how this works with a series of simple examples:
-
-### Basics
+input files rather than options. Let's see how all of this works with a series
+of simple examples:
 
 Output from `ls` will include quotes for paths with spaces:
 
@@ -185,14 +201,6 @@ Control sequences and variables allow fine grained formatting. These commands
 need to be enclosed by curved brackets `{` and `}`, such as `{red}` or
 `{dirname}` to be recognized. Mix and match them together with arbitrary text
 to form the exact format you like.
-
-To see a list of supported style and format commands, use the explain option
-`-H` or `--explain`:
-
-```bash
-fpath --explain fmt
-fpath --explain style
-```
 
 For the following examples, I have create a new directory with random files:
 
