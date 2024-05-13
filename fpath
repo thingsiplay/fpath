@@ -180,6 +180,9 @@ def supported_fmt_commands() -> dict[str, str]:
         "list": "path broken up into individual parts",
         "0..9": "direct access each part with index, from {0} to {9}",
         "-start:end": "slice from any to any index, including negative numbers",
+        "index": "current number of path in process",
+        "i": "same as {index}",
+        "total": "total count of paths to process",
         "path": "path as posix",
         "root": "drive and root if any",
         "uri": "path as file URI",
@@ -371,6 +374,7 @@ class App:
         hash_file_entries = {}
         hash_mime_entries = {}
         hash_type_entries = {}
+        total_entries = len(self.paths)
         for index, entry in enumerate(self.paths):
             fmt: str = self.format
 
@@ -383,6 +387,12 @@ class App:
             parts = path.parts
             posix = path.as_posix()
 
+            if "{i}" in fmt:
+                fmt = fmt.replace("{i}", "{index}")
+            if "{index}" in fmt:
+                fmt = fmt.replace("{index}", str(index + 1))
+            if "{total}" in fmt:
+                fmt = fmt.replace("{total}", str(total_entries))
             if "{origin}" in fmt:
                 fmt = fmt.replace("{origin}", escape(entry.origin))
             if "{list}" in fmt:

@@ -357,6 +357,9 @@ fpath --explain style_compact
 {list}: path broken up into individual parts
 {0}..{9}: direct access each part with index, from {0} to {9}
 {-start:end}: slice from any to any index, including negative numbers
+{index}: current number of path in process
+{i}: same as {index}
+{total}: total count of paths to process
 {path}: path as posix
 {root}: drive and root if any
 {uri}: path as file URI
