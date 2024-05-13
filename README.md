@@ -376,6 +376,7 @@ fpath --explain style_compact
 {group}: name of group from file owner
 {.stat}: unprocessed file stat results
 {.mode}: file permissions
+{.perm}: same as {.mode}
 {.dev}: device id where this file resides
 {.uid}: user id number from file owner
 {.gid}: group id number from file owner

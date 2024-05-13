@@ -199,6 +199,7 @@ def supported_fmt_commands() -> dict[str, str]:
         "group": "name of group from file owner",
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
+        ".perm": "same as {.mode}",
         ".dev": "device id where this file resides",
         ".uid": "user id number from file owner",
         ".gid": "group id number from file owner",
@@ -455,6 +456,8 @@ class App:
                         fmt = fmt.replace(
                             "{.stat}", str(st).removeprefix("os.stat_result")
                         )
+                    if "{.pe" in fmt:
+                        fmt = fmt.replace("{.perm}", "{.mode}")
                     if "{.mo" in fmt:
                         fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
                     if "{.de" in fmt:
