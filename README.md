@@ -27,6 +27,9 @@ make it better readable is a useful thing to do, even if its only temporarily.
 This script `fpath` was born, in a matter to simplify and speedup this process
 when needed.
 
+BTW, with recent optimizations it's already quite fast, even with thousands
+of files/paths as input.
+
 ## Installation
 
 This is a Python script. It is developed for Linux and has external library
@@ -281,12 +284,14 @@ braces. But it is important to understand that we have to reset the color or
 entire style for the line, otherwise it will spill over to next line. Look at
 the screenshot for the output, to understand the differences:
 
+Note: An empty `{}` is a shortcut for `{default}`.
+
 ```bash
 $ cd ~/Desktop/My" "Files/
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{name}'
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}'
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}{default}'
-$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}{/color}\t{name}{default}'
+$ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}{/color}\t{name}{}'
 # see img/bold_yellow.png
 ```
 
