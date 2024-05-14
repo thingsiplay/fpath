@@ -398,6 +398,7 @@ fpath --explain style_compact
 {.b}: file size in bytes
 {.kb}: file size in kilobytes
 {.mb}: file size in megabytes
+{.gb}: file size in gigabytes
 {.atime}: last access timestamp in readable format
 {.mtime}: last modified timestamp in readable format
 {.ctime}: last changed timestamp in readable format
@@ -418,6 +419,7 @@ fpath --explain style_compact
 {.lb}: same as {.b}, but do not follow symlinks
 {.lkb}: same as {.kb}, but do not follow symlinks
 {.lmb}: same as {.mb}, but do not follow symlinks
+{.lgb}: same as {.gb}, but do not follow symlinks
 {.latime}: same as {.atime}, but do not follow symlinks
 {.lmtime}: same as {.mtime}, but do not follow symlinks
 {.lctime}: same as {.ctime}, but do not follow symlinks

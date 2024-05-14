@@ -237,6 +237,7 @@ def supported_fmt_commands() -> dict[str, str]:
         ".b": "file size in bytes",
         ".kb": "file size in kilobytes",
         ".mb": "file size in megabytes",
+        ".gb": "file size in gigabytes",
         ".atime": "last access timestamp in readable format",
         ".mtime": "last modified timestamp in readable format",
         ".ctime": "last changed timestamp in readable format",
@@ -257,6 +258,7 @@ def supported_fmt_commands() -> dict[str, str]:
         ".lb": "same as {.b}, but do not follow links",
         ".lkb": "same as {.kb}, but do not follow links",
         ".lmb": "same as {.mb}, but do not follow links",
+        ".lgb": "same as {.gb}, but do not follow links",
         ".latime": "same as {.atime}, but do not follow links",
         ".lmtime": "same as {.mtime}, but do not follow links",
         ".lctime": "same as {.ctime}, but do not follow links",
@@ -592,6 +594,10 @@ class App:
                         fmt = fmt.replace(
                             "{.lmb}", str(round(lst.st_size / 1024 / 1024, 1))
                         )
+                    if "{.lgb}" in fmt:
+                        fmt = fmt.replace(
+                            "{.lgb}", str(round(lst.st_size / 1024 / 1024 / 1024, 1))
+                        )
                     if "{.latime}" in fmt:
                         fmt = fmt.replace("{.latime}", time(lst.st_atime))
                     if "{.lmtime}" in fmt:
@@ -651,6 +657,10 @@ class App:
                     if "{.mb}" in fmt:
                         fmt = fmt.replace(
                             "{.mb}", str(round(st.st_size / 1024 / 1024, 1))
+                        )
+                    if "{.gb}" in fmt:
+                        fmt = fmt.replace(
+                            "{.gb}", str(round(st.st_size / 1024 / 1024 / 1024, 1))
                         )
                     if "{.atime}" in fmt:
                         fmt = fmt.replace("{.atime}", time(st.st_atime))
