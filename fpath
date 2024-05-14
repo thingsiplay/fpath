@@ -194,6 +194,8 @@ def terminal_style_codes_table(
 
 def supported_fmt_commands() -> dict[str, str]:
     return {
+        "q": "literal single quote '",
+        "qq": 'literal double quote "',
         "STYLE": "name of the style like 'green' or 'bold'",
         "center:num": "center text by padding with NUM * space",
         "ljust:num": "left justify text by padding with NUM * space",
@@ -495,6 +497,10 @@ class App:
             posix = path.as_posix()
             is_absolute = path.is_absolute()
 
+            if "{q}" in fmt:
+                fmt = fmt.replace("{q}", "'")
+            if "{qq}" in fmt:
+                fmt = fmt.replace("{qq}", '"')
             if "{i}" in fmt:
                 fmt = fmt.replace("{i}", "{index}")
             if "{index}" in fmt:

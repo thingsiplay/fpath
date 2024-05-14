@@ -354,6 +354,8 @@ fpath --explain style_compact
 "\b": backspace
 "\f": form feed
 
+{q}: literal single quote '
+{qq}: literal double quote "
 {STYLE}: name of the style like 'green' or 'bold'
 {center:num}: center text by padding with NUM * space
 {ljust:num}: left justify text by padding with NUM * space
