@@ -396,9 +396,9 @@ fpath --explain style_compact
 {.nlink}: number of hard links on filesystem
 {.size}: auto format file size with unit, 1 rounding digit
 {.b}: file size in bytes
-{.kb}: file size in kilobytes, up to 2 rounding digits
-{.mb}: file size in megabytes, up to 2 rounding digits
-{.gb}: file size in gigabytes, up to 2 rounding digits
+{.kb}: file size in kilobytes, 2 rounding digits
+{.mb}: file size in megabytes, 2 rounding digits
+{.gb}: file size in gigabytes, 2 rounding digits
 {.atime}: last access timestamp in readable format
 {.mtime}: last modified timestamp in readable format
 {.ctime}: last changed timestamp in readable format

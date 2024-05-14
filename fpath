@@ -9,6 +9,7 @@ from datetime import datetime
 from stat import filemode, S_ISDIR, S_ISREG, S_ISLNK
 from re import compile as re_compile
 from hashlib import sha3_512
+from decimal import Decimal
 
 
 class fmtPath:
@@ -235,9 +236,9 @@ def supported_fmt_commands() -> dict[str, str]:
         ".nlink": "number of hard links on filesystem",
         ".size": "auto format file size with unit, 1 rounding digit",
         ".b": "file size in bytes",
-        ".kb": "file size in kilobytes, up to 2 rounding digits",
-        ".mb": "file size in megabytes, up to 2 rounding digits",
-        ".gb": "file size in gigabytes, up to 2 rounding digits",
+        ".kb": "file size in kilobytes, 2 rounding digits",
+        ".mb": "file size in megabytes, 2 rounding digits",
+        ".gb": "file size in gigabytes, 2 rounding digits",
         ".atime": "last access timestamp in readable format",
         ".mtime": "last modified timestamp in readable format",
         ".ctime": "last changed timestamp in readable format",
@@ -906,22 +907,26 @@ meaning:
 
 def file_size_with_unit(bytes: float) -> str:
     unit = "B"
-    if bytes > 1024:
-        bytes = bytes / 1024
+    dbytes = Decimal(bytes)
+    if dbytes > 1024:
+        dbytes = dbytes / 1024
         unit = "KB"
-    if bytes > 1024:
-        bytes = bytes / 1024
+    if dbytes > 1024:
+        dbytes = dbytes / 1024
         unit = "MB"
-    if bytes > 1024:
-        bytes = bytes / 1024
+    if dbytes > 1024:
+        dbytes = dbytes / 1024
         unit = "GB"
-    return f"{round(bytes, 1)} {unit}"
+    return f"{round(dbytes, 1)} {unit}"
 
 
 def file_size(bytes: float, unit: int | None = None) -> str:
+    if unit is None:
+        return str(bytes)
+    dbytes = Decimal(bytes)
     if unit is not None:
-        bytes = bytes / unit
-    return str(round(bytes, 2))
+        dbytes = dbytes / unit
+    return str(round(dbytes, 2))
 
 
 def time(seconds: float) -> str:
