@@ -394,11 +394,11 @@ fpath --explain style_compact
 {.uid}: user id number from file owner
 {.gid}: group id number from file owner
 {.nlink}: number of hard links on filesystem
-{.size}: human readable format of file size
+{.size}: auto format file size with unit, 1 rounding digit
 {.b}: file size in bytes
-{.kb}: file size in kilobytes
-{.mb}: file size in megabytes
-{.gb}: file size in gigabytes
+{.kb}: file size in kilobytes, up to 2 rounding digits
+{.mb}: file size in megabytes, up to 2 rounding digits
+{.gb}: file size in gigabytes, up to 2 rounding digits
 {.atime}: last access timestamp in readable format
 {.mtime}: last modified timestamp in readable format
 {.ctime}: last changed timestamp in readable format
