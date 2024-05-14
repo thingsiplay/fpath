@@ -7,8 +7,6 @@ from argparse import Namespace as ArgumentNamespace
 from pathlib import Path
 from datetime import datetime
 from stat import filemode, S_ISDIR, S_ISREG, S_ISLNK
-from re import finditer as regex_finditer
-from re import sub as regex_sub
 from re import compile as re_compile
 from hashlib import sha3_512
 
@@ -404,11 +402,44 @@ class App:
         # Also the escape sequences with backslash should be replaced first,
         # so they cannot interfere with paths.
 
+        # {N:N} examples: {-1:} {2:4}
         re_slice = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
+
+        # {rjust:N}{/rjust}
         re_rjust = re_compile(r"{rjust:([0-9]+?)}(.*?){/rjust}")
+
+        # {ljust:N}{/ljust}
         re_ljust = re_compile(r"{ljust:([0-9]+?)}(.*?){/ljust}")
+
+        # {center:N}{/center}
         re_center = re_compile(r"{center:([0-9]+?)}(.*?){/center}")
+
+        # {fill:N}{/fill}
         re_fill = re_compile(r"{fill:([0-9]+?)}(.*?){/fill}")
+
+        # {.ANY} examples: {.stats} {.isdir}
+        re_stats = re_compile(r"{\.[^{}]+?}")
+
+        # {.lANY} examples: {.lstats} {.lisdir}
+        re_lstats = re_compile(r"{\.l[^{}]+?}")
+
+        # {.atime:ARGS}
+        re_atime = re_compile(r"\.atime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+
+        # {.mtime:ARGS}
+        re_mtime = re_compile(r"\.mtime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+
+        # {.ctime:ARGS}
+        re_ctime = re_compile(r"\.ctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+
+        # {.latime:ARGS}
+        re_latime = re_compile(r"\.latime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+
+        # {.lmtime:ARGS}
+        re_lmtime = re_compile(r"\.lmtime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+
+        # {.lctime:ARGS}
+        re_lctime = re_compile(r"\.lctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
 
         entries = []
         hash_file_entries = {}
@@ -490,7 +521,7 @@ class App:
                 try:
                     lst = entry.path.expanduser().lstat()
                 except FileNotFoundError:
-                    fmt = regex_sub(r"{\.l[^{}]+?}", "", fmt)
+                    fmt = re_lstats.sub("", fmt)
                 else:
                     if "{.lst" in fmt:
                         fmt = fmt.replace(
@@ -532,9 +563,15 @@ class App:
                         fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
                     if "{.l" in fmt:
                         if "ltime:" in fmt:
-                            fmt = self.time_custom_arg(lst.st_atime, "la", fmt)
-                            fmt = self.time_custom_arg(lst.st_mtime, "lm", fmt)
-                            fmt = self.time_custom_arg(lst.st_ctime, "lc", fmt)
+                            fmt = self.time_custom_arg(
+                                lst.st_atime, "la", re_latime, fmt
+                            )
+                            fmt = self.time_custom_arg(
+                                lst.st_mtime, "lm", re_lmtime, fmt
+                            )
+                            fmt = self.time_custom_arg(
+                                lst.st_ctime, "lc", re_lctime, fmt
+                            )
 
             # stats
             # NOTE: Make sure to be in sync with lstats. And do not name these
@@ -544,7 +581,7 @@ class App:
                 try:
                     st = entry.path.expanduser().stat()
                 except FileNotFoundError:
-                    fmt = regex_sub(r"{\.[^{}]+?}", "", fmt)
+                    fmt = re_stats.sub("", fmt)
                 else:
                     if "{.st" in fmt:
                         fmt = fmt.replace(
@@ -586,9 +623,9 @@ class App:
                         fmt = fmt.replace("{.ctime}", time(st.st_ctime))
                     if "{." in fmt:
                         if "time:" in fmt:
-                            fmt = self.time_custom_arg(st.st_atime, "a", fmt)
-                            fmt = self.time_custom_arg(st.st_mtime, "m", fmt)
-                            fmt = self.time_custom_arg(st.st_ctime, "c", fmt)
+                            fmt = self.time_custom_arg(st.st_atime, "a", re_atime, fmt)
+                            fmt = self.time_custom_arg(st.st_mtime, "m", re_mtime, fmt)
+                            fmt = self.time_custom_arg(st.st_ctime, "c", re_ctime, fmt)
 
             # styles: {red}
             if "{" in fmt:
@@ -710,11 +747,8 @@ class App:
         return source
 
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
-    def time_custom_arg(self, seconds: float, prefix: str, source: str) -> str:
-        # Looking for format like: "{.atime:arguments}"
-        for match in regex_finditer(
-            r"{\." + prefix + r"time:([-+ _/%,.:a-z-A-Z0-9]+?)?}", source
-        ):
+    def time_custom_arg(self, seconds: float, prefix: str, regex, source: str) -> str:
+        for match in regex.finditer(source):
             args = match.group(1)
             if args is None:
                 args = ""
