@@ -23,6 +23,7 @@ class fmtPath:
         base: Path | None,
         tilde: bool,
         quotes: str,
+        dot: bool,
     ) -> None:
         self.origin = path
         # work_path does not contain all configurations and is not intended for
@@ -41,13 +42,32 @@ class fmtPath:
 
         self.lazy_tilde = tilde
         self.lazy_quotes = quotes
+        self.with_leading_dot = dot
         return
 
     def __str__(self) -> str:
-        return self.lazy_quotes + self.path.as_posix() + self.lazy_quotes
+        if self.with_leading_dot and not self.lazy_tilde:
+            path = self.path
+            if not path.is_absolute():
+                leading_dot = "./"
+            else:
+                leading_dot = ""
+            return self.lazy_quotes + leading_dot + path.as_posix() + self.lazy_quotes
+        else:
+            return self.lazy_quotes + self.path.as_posix() + self.lazy_quotes
 
     def __repr__(self) -> str:
-        return repr(self.lazy_quotes + self.path.as_posix() + self.lazy_quotes)
+        if self.with_leading_dot and not self.lazy_tilde:
+            path = self.path
+            if not path.is_absolute():
+                leading_dot = "./"
+            else:
+                leading_dot = ""
+            return repr(
+                self.lazy_quotes + leading_dot + path.as_posix() + self.lazy_quotes
+            )
+        else:
+            return repr(self.lazy_quotes + self.path.as_posix() + self.lazy_quotes)
 
     @property
     def path(self) -> Path:
@@ -322,14 +342,18 @@ class App:
         else:
             self.sep_style = None
 
+        self.dot = args.dot
+        self.tilde = args.tilde
+
         self.paths: list[fmtPath] = [
             fmtPath(
                 p,
                 args.absolute,
                 args.resolve,
                 args.base,
-                args.tilde,
+                self.tilde,
                 self.quotes,
+                self.dot,
             )
             for p in input_paths
         ]
@@ -389,8 +413,12 @@ class App:
             text = escape_slash(text, "/")
             return text.replace("{", "\x02").replace("}", "\x03")
 
-        def escape_and_quote(text: str) -> str:
-            return self.quotes + escape(text) + self.quotes
+        def escape_and_quote(text: str, is_absolute: bool) -> str:
+            if self.dot and not self.tilde and not is_absolute:
+                leading_dot = "./"
+            else:
+                leading_dot = ""
+            return self.quotes + escape(leading_dot + text) + self.quotes
 
         if self.format is None:
             return self.paths
@@ -457,6 +485,7 @@ class App:
             path = entry.path
             parts = path.parts
             posix = path.as_posix()
+            is_absolute = path.is_absolute()
 
             if "{i}" in fmt:
                 fmt = fmt.replace("{i}", "{index}")
@@ -467,25 +496,33 @@ class App:
             if "{origin}" in fmt:
                 fmt = fmt.replace("{origin}", escape(entry.origin))
             if "{list}" in fmt:
-                fmt = fmt.replace("{list}", escape_and_quote(str(parts)))
+                fmt = fmt.replace("{list}", escape_and_quote(str(parts), False))
             if "{path}" in fmt:
-                fmt = fmt.replace("{path}", escape_and_quote(posix))
+                fmt = fmt.replace("{path}", escape_and_quote(posix, is_absolute))
             if "{root}" in fmt:
-                fmt = fmt.replace("{root}", escape_and_quote(path.anchor))
+                fmt = fmt.replace("{root}", escape_and_quote(path.anchor, False))
             if "{uri}" in fmt:
-                fmt = fmt.replace("{uri}", escape_and_quote(path.absolute().as_uri()))
+                fmt = fmt.replace(
+                    "{uri}", escape_and_quote(path.absolute().as_uri(), False)
+                )
             if "{dir}" in fmt:
-                fmt = fmt.replace("{dir}", escape_and_quote(path.parent.as_posix()))
+                fmt = fmt.replace(
+                    "{dir}", escape_and_quote(path.parent.as_posix(), is_absolute)
+                )
             if "{dirname}" in fmt:
-                fmt = fmt.replace("{dirname}", escape_and_quote(path.parent.name))
+                fmt = fmt.replace(
+                    "{dirname}", escape_and_quote(path.parent.name, False)
+                )
             if "{name}" in fmt:
-                fmt = fmt.replace("{name}", escape_and_quote(path.name))
+                fmt = fmt.replace("{name}", escape_and_quote(path.name, False))
             if "{stem}" in fmt:
-                fmt = fmt.replace("{stem}", escape_and_quote(path.stem))
+                fmt = fmt.replace("{stem}", escape_and_quote(path.stem, False))
             if "{ext}" in fmt:
-                fmt = fmt.replace("{ext}", escape_and_quote(path.suffix))
+                fmt = fmt.replace("{ext}", escape_and_quote(path.suffix, False))
             if "{exts}" in fmt:
-                fmt = fmt.replace("{exts}", escape_and_quote("".join(path.suffixes)))
+                fmt = fmt.replace(
+                    "{exts}", escape_and_quote("".join(path.suffixes), False)
+                )
 
             if "{file}" in fmt:
                 h = hash(posix + f"{index}file")
@@ -663,7 +700,9 @@ class App:
 
                         fmt = fmt.replace(
                             key,
-                            escape_and_quote("/".join(slice).replace("//", "/", 1)),
+                            escape_and_quote(
+                                "/".join(slice).replace("//", "/", 1), False
+                            ),
                         )
                 else:
                     # index: {0}, {1}, {2} ... {9}
@@ -674,9 +713,9 @@ class App:
                             break
                         iseq = "{" + str(i) + "}"
                         if i >= p_len:
-                            fmt = fmt.replace(iseq, escape_and_quote(""))
+                            fmt = fmt.replace(iseq, escape_and_quote("", False))
                         else:
-                            fmt = fmt.replace(iseq, escape_and_quote(parts[i]))
+                            fmt = fmt.replace(iseq, escape_and_quote(parts[i], False))
 
             if "{rjust:" in fmt:
                 for m in re_rjust.findall(fmt):
@@ -994,6 +1033,14 @@ def parse_arguments() -> ArgumentNamespace:
         default=False,
         action="store_true",
         help="display users home directory as tilde '~/'",
+    )
+
+    _ = parser.add_argument(
+        "-d",
+        "--dot",
+        default=False,
+        action="store_true",
+        help="display unresolved relative paths with a leading dot './'",
     )
 
     quotes_group = parser.add_mutually_exclusive_group()
