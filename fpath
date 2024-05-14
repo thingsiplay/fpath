@@ -200,9 +200,9 @@ def supported_fmt_commands() -> dict[str, str]:
         "stem": "file name without directory and extension",
         "ext": "single file extension after '.'",
         "exts": "all file extensions if more than one '.'",
-        "file": "file type information based on file content (slow)",
-        "type": "short type based on file content (slow)",
-        "mime": "short mime based on file content (slow)",
+        "file": "long type information based on file content (slow)",
+        "type": "short type information based on file content (slow)",
+        "mime": "short mime information based on file content (slow)",
         "owner": "name of owner from file",
         "group": "name of group from file owner",
         ".stat": "unprocessed file stat results",
@@ -721,6 +721,8 @@ In addition following control sequences are translated into their "real"
 meaning:
 
     "\\" to literal single slash "\"
+    "\{" to literal "{"
+    "\}" to literal "}"
     "\n" to newline
     "\t" to tab
     "\r" to carriage return

@@ -346,6 +346,8 @@ fpath --explain style_compact
 
 ```
 "\\": literal single slash "\"
+"\{": literal "{"
+"\}": literal "}"
 "\n": newline
 "\t": tab
 "\r": carriage return
@@ -377,9 +379,9 @@ fpath --explain style_compact
 {stem}: file name without directory and extension
 {ext}: single file extension after '.'
 {exts}: all file extensions if more than one '.'
-{file}: file type information based on file content (slow)
-{type}: short type based on file content (slow)
-{mime}: short mime based on file content (slow)
+{file}: long type information based on file content (slow)
+{type}: short type information based on file content (slow)
+{mime}: short mime information based on file content (slow)
 {owner}: name of owner from file
 {group}: name of group from file owner
 {.stat}: unprocessed file stat results
