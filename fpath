@@ -471,6 +471,11 @@ class App:
         # {.lctime:ARGS}
         re_lctime = re_compile(r"\.lctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
 
+        # For use as unit in size calculation.
+        KB_UNIT = 1024
+        MB_UNIT = KB_UNIT * 1024
+        GB_UNIT = MB_UNIT * 1024
+
         entries = []
         hash_file_entries = {}
         hash_mime_entries = {}
@@ -585,19 +590,15 @@ class App:
                     if "{.lnl" in fmt:
                         fmt = fmt.replace("{.lnlink}", str(lst.st_nlink))
                     if "{.lsi" in fmt:
-                        fmt = fmt.replace("{.lsize}", size(lst.st_size))
+                        fmt = fmt.replace("{.lsize}", file_size_with_unit(lst.st_size))
                     if "{.lb}" in fmt:
-                        fmt = fmt.replace("{.lb}", str(lst.st_size))
+                        fmt = fmt.replace("{.lb}", file_size(lst.st_size))
                     if "{.lkb}" in fmt:
-                        fmt = fmt.replace("{.lkb}", str(round(lst.st_size / 1024, 1)))
+                        fmt = fmt.replace("{.lkb}", file_size(lst.st_size, KB_UNIT))
                     if "{.lmb}" in fmt:
-                        fmt = fmt.replace(
-                            "{.lmb}", str(round(lst.st_size / 1024 / 1024, 1))
-                        )
+                        fmt = fmt.replace("{.lmb}", file_size(lst.st_size, MB_UNIT))
                     if "{.lgb}" in fmt:
-                        fmt = fmt.replace(
-                            "{.lgb}", str(round(lst.st_size / 1024 / 1024 / 1024, 1))
-                        )
+                        fmt = fmt.replace("{.lgb}", file_size(lst.st_size, GB_UNIT))
                     if "{.latime}" in fmt:
                         fmt = fmt.replace("{.latime}", time(lst.st_atime))
                     if "{.lmtime}" in fmt:
@@ -649,19 +650,15 @@ class App:
                     if "{.nl" in fmt:
                         fmt = fmt.replace("{.nlink}", str(st.st_nlink))
                     if "{.si" in fmt:
-                        fmt = fmt.replace("{.size}", size(st.st_size))
+                        fmt = fmt.replace("{.size}", file_size_with_unit(st.st_size))
                     if "{.b}" in fmt:
-                        fmt = fmt.replace("{.b}", str(st.st_size))
+                        fmt = fmt.replace("{.b}", file_size(st.st_size))
                     if "{.kb}" in fmt:
-                        fmt = fmt.replace("{.kb}", str(round(st.st_size / 1024, 1)))
+                        fmt = fmt.replace("{.kb}", file_size(st.st_size, KB_UNIT))
                     if "{.mb}" in fmt:
-                        fmt = fmt.replace(
-                            "{.mb}", str(round(st.st_size / 1024 / 1024, 1))
-                        )
+                        fmt = fmt.replace("{.mb}", file_size(st.st_size, MB_UNIT))
                     if "{.gb}" in fmt:
-                        fmt = fmt.replace(
-                            "{.gb}", str(round(st.st_size / 1024 / 1024 / 1024, 1))
-                        )
+                        fmt = fmt.replace("{.gb}", file_size(st.st_size, GB_UNIT))
                     if "{.atime}" in fmt:
                         fmt = fmt.replace("{.atime}", time(st.st_atime))
                     if "{.mtime}" in fmt:
@@ -907,7 +904,7 @@ meaning:
         return
 
 
-def size(bytes: float) -> str:
+def file_size_with_unit(bytes: float) -> str:
     unit = "B"
     if bytes > 1024:
         bytes = bytes / 1024
@@ -919,6 +916,12 @@ def size(bytes: float) -> str:
         bytes = bytes / 1024
         unit = "GB"
     return f"{round(bytes, 1)} {unit}"
+
+
+def file_size(bytes: float, unit: int | None = None) -> str:
+    if unit is not None:
+        bytes = bytes / unit
+    return str(round(bytes, 1))
 
 
 def time(seconds: float) -> str:
