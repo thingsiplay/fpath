@@ -210,7 +210,7 @@ def supported_fmt_commands() -> dict[str, str]:
         ".perm": "same as {.mode}",
         ".isdir": "1=if a directory, 0=if not",
         ".isreg": "1=if a regular file, 0=if not",
-        ".islnk": "1=if a symbolic link, 0=if not",
+        ".islink": "1=if a symbolic link, 0=if not",
         ".dev": "device id where this file resides",
         ".uid": "user id number from file owner",
         ".gid": "group id number from file owner",
@@ -225,6 +225,26 @@ def supported_fmt_commands() -> dict[str, str]:
         ".atime:args": "custom strftime format codes",
         ".mtime:args": "custom strftime format codes",
         ".ctime:args": "custom strftime format codes",
+        ".lstat": "same as {.stat}, but do not follow links",
+        ".lmode": "same as {.mode}, but do not follow links",
+        ".lperm": "same as {.perm}, but do not follow links",
+        ".lisdir": "same as {.isdir}, but do not follow links",
+        ".lisreg": "same as {.isreg}, but do not follow links",
+        ".lislink": "same as {.islink}, but do not follow links",
+        ".ldev": "same as {.dev}, but do not follow links",
+        ".luid": "same as {.uid}, but do not follow links",
+        ".lgid": "same as {.gid}, but do not follow links",
+        ".lnlink": "same as {.nlink}, but do not follow links",
+        ".lsize": "same as {.size}, but do not follow links",
+        ".lb": "same as {.b}, but do not follow links",
+        ".lkb": "same as {.kb}, but do not follow links",
+        ".lmb": "same as {.mb}, but do not follow links",
+        ".latime": "same as {.atime}, but do not follow links",
+        ".lmtime": "same as {.mtime}, but do not follow links",
+        ".lctime": "same as {.ctime}, but do not follow links",
+        ".latime:args": "same as {.atime:args}, but do not follow links",
+        ".lmtime:args": "same as {.mtime:args}, but do not follow links",
+        ".lctime:args": "same as {.ctime:args}, but do not follow links",
     }
 
 
@@ -463,7 +483,62 @@ class App:
                 except (KeyError, FileNotFoundError):
                     fmt = fmt.replace("{group}", "")
 
+            # lstats
+            # NOTE: Make sure to be in sync with stats.
+            if "{.l" in fmt:
+                # https://docs.python.org/3/library/os.html#os.stat_result
+                try:
+                    lst = entry.path.expanduser().lstat()
+                except FileNotFoundError:
+                    fmt = regex_sub(r"{\.l[^{}]+?}", "", fmt)
+                else:
+                    if "{.lst" in fmt:
+                        fmt = fmt.replace(
+                            "{.lstat}", str(lst).removeprefix("os.stat_result")
+                        )
+                    if "{.lpe" in fmt:
+                        fmt = fmt.replace("{.lperm}", "{.lmode}")
+                    if "{.lmo" in fmt:
+                        fmt = fmt.replace("{.lmode}", str(filemode(lst.st_mode)))
+                    if "{.lisd" in fmt:
+                        fmt = fmt.replace("{.lisdir}", str(int(S_ISDIR(lst.st_mode))))
+                    if "{.lisr" in fmt:
+                        fmt = fmt.replace("{.lisreg}", str(int(S_ISREG(lst.st_mode))))
+                    if "{.lisl" in fmt:
+                        fmt = fmt.replace("{.lislink}", str(int(S_ISLNK(lst.st_mode))))
+                    if "{.lde" in fmt:
+                        fmt = fmt.replace("{.ldev}", str(lst.st_dev))
+                    if "{.lui" in fmt:
+                        fmt = fmt.replace("{.luid}", str(lst.st_uid))
+                    if "{.lgi" in fmt:
+                        fmt = fmt.replace("{.lgid}", str(lst.st_gid))
+                    if "{.lnl" in fmt:
+                        fmt = fmt.replace("{.lnlink}", size(lst.st_nlink))
+                    if "{.lsi" in fmt:
+                        fmt = fmt.replace("{.lsize}", size(lst.st_size))
+                    if "{.lb}" in fmt:
+                        fmt = fmt.replace("{.lb}", str(lst.st_size))
+                    if "{.lkb}" in fmt:
+                        fmt = fmt.replace("{.lkb}", str(round(lst.st_size / 1024, 1)))
+                    if "{.lmb}" in fmt:
+                        fmt = fmt.replace(
+                            "{.lmb}", str(round(lst.st_size / 1024 / 1024, 1))
+                        )
+                    if "{.latime}" in fmt:
+                        fmt = fmt.replace("{.latime}", time(lst.st_atime))
+                    if "{.lmtime}" in fmt:
+                        fmt = fmt.replace("{.lmtime}", time(lst.st_mtime))
+                    if "{.lctme}" in fmt:
+                        fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
+                    if "{.l" in fmt:
+                        if "ltime:" in fmt:
+                            fmt = self.time_custom_arg(lst.st_atime, "la", fmt)
+                            fmt = self.time_custom_arg(lst.st_mtime, "lm", fmt)
+                            fmt = self.time_custom_arg(lst.st_ctime, "lc", fmt)
+
             # stats
+            # NOTE: Make sure to be in sync with lstats. And do not name these
+            # starting with {.l !
             if "{." in fmt:
                 # https://docs.python.org/3/library/os.html#os.stat_result
                 try:
@@ -484,7 +559,7 @@ class App:
                     if "{.isr" in fmt:
                         fmt = fmt.replace("{.isreg}", str(int(S_ISREG(st.st_mode))))
                     if "{.isl" in fmt:
-                        fmt = fmt.replace("{.islnk}", str(int(S_ISLNK(st.st_mode))))
+                        fmt = fmt.replace("{.islink}", str(int(S_ISLNK(st.st_mode))))
                     if "{.de" in fmt:
                         fmt = fmt.replace("{.dev}", str(st.st_dev))
                     if "{.ui" in fmt:
@@ -714,6 +789,15 @@ with space until the area is 15 characters long. Similararly {ljust:num} and
 prefix sign. BTW, same kind of fill command should not be nested. 
 
     -F{fill:5}{/fill}{center:70}{.mode}{/center}
+
+The stat based command starting with a dot {. will follow any symlink and
+report information on the target. Note that therefore {.islink} will report if
+the target of a symlink is a symlink! To get information about a link file
+itself, use those starting with {.l in name, such as {.lislink to report if the
+path pointing to the file itself is a symlink and not its target. Good example
+to test on is the file ~/.steampid .
+
+    -F'{.islink} != {.lislink}'
 
 All style commands are also available. List them with -H style.
 

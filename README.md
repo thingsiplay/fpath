@@ -389,7 +389,7 @@ fpath --explain style_compact
 {.perm}: same as {.mode}
 {.isdir}: 1=if a directory, 0=if not
 {.isreg}: 1=if a regular file, 0=if not
-{.islnk}: 1=if a symbolic link, 0=if not
+{.islink}: 1=if a symbolic link, 0=if not
 {.dev}: device id where this file resides
 {.uid}: user id number from file owner
 {.gid}: group id number from file owner
@@ -404,6 +404,26 @@ fpath --explain style_compact
 {.atime:args:} custom strftime format codes
 {.mtime:args}: custom strftime format codes
 {.ctime:args}: custom strftime format codes
+{.lstat}: same as {.stat}, but do not follow symlinks
+{.lmode}: same as {.mode}, but do not follow symlinks
+{.lperm}: same as {.perm}, but do not follow symlinks
+{.lisdir}: same as {.isdir}, but do not follow symlinks
+{.lisreg}: same as {.isreg}, but do not follow symlinks
+{.lislink}: same as {.islink}, but do not follow symlinks
+{.ldev}: same as {.dev}, but do not follow symlinks
+{.luid}: same as {.uid}, but do not follow symlinks
+{.lgid}: same as {.gid}, but do not follow symlinks
+{.lnlink}: same as {.nlink}, but do not follow symlinks
+{.lsize}: same as {.size}, but do not follow symlinks
+{.lb}: same as {.b}, but do not follow symlinks
+{.lkb}: same as {.kb}, but do not follow symlinks
+{.lmb}: same as {.mb}, but do not follow symlinks
+{.latime}: same as {.atime}, but do not follow symlinks
+{.lmtime}: same as {.mtime}, but do not follow symlinks
+{.lctime}: same as {.ctime}, but do not follow symlinks
+{.latime:args}: same as {.atime:args}, but do not follow symlinks
+{.lmtime:args}: same as {.mtime:args}, but do not follow symlinks
+{.lctime:args}: same as {.ctime:args}, but do not follow symlinks
 
 global:
 {}, {reset}, {default}
