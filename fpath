@@ -583,7 +583,7 @@ class App:
                     if "{.lgi" in fmt:
                         fmt = fmt.replace("{.lgid}", str(lst.st_gid))
                     if "{.lnl" in fmt:
-                        fmt = fmt.replace("{.lnlink}", size(lst.st_nlink))
+                        fmt = fmt.replace("{.lnlink}", str(lst.st_nlink))
                     if "{.lsi" in fmt:
                         fmt = fmt.replace("{.lsize}", size(lst.st_size))
                     if "{.lb}" in fmt:
@@ -647,7 +647,7 @@ class App:
                     if "{.gi" in fmt:
                         fmt = fmt.replace("{.gid}", str(st.st_gid))
                     if "{.nl" in fmt:
-                        fmt = fmt.replace("{.nlink}", size(st.st_nlink))
+                        fmt = fmt.replace("{.nlink}", str(st.st_nlink))
                     if "{.si" in fmt:
                         fmt = fmt.replace("{.size}", size(st.st_size))
                     if "{.b}" in fmt:
