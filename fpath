@@ -111,24 +111,30 @@ def terminal_style_codes_table(
         },
         "effects": {
             "bold": "1",
+            "**": "1",
             "italic": "3",
+            "*": "3",
             "dim": "2",
             "underline": "4",
             "dunderline": "21",
             "overline": "53",
+            "reverse": "7",
+            "=": "7",
             "strike": "9",
             "blink": "5",
-            "reverse": "7",
             "hide": "8",
         },
         "effects off": {
             "/bold": "22",
+            "/**": "22",
             "/italic": "23",
+            "/*": "23",
             "/dim": "22",
             "/underline": "24",
             "/dunderline": "24",
             "/overline": "55",
             "/reverse": "27",
+            "/=": "27",
             "/strike": "29",
             "/blink": "25",
             "/hide": "28",
@@ -137,8 +143,11 @@ def terminal_style_codes_table(
             "dark": "30",
             "white": "37",
             "red": "31",
+            "R": "31",
             "green": "32",
+            "G": "32",
             "blue": "34",
+            "B": "34",
             "yellow": "33",
             "magenta": "35",
             "cyan": "36",
@@ -697,6 +706,8 @@ class App:
                 fmt = re_stats.sub("", fmt)
 
             # styles: {red}
+            if "{/}" in fmt:
+                fmt = fmt.replace("{/}", "{/color}{/bg.color}")
             if "{" in fmt:
                 for name, code in self.style_codes.items():
                     style_cmd = "{" + name + "}"
@@ -840,7 +851,17 @@ styles with -s option will overwrite color and style changes from -F.
     -s "red"
     -sblink
 
-An empty style as "" or {} is interpreted as reset.
+There are a few shortcuts available, with same meaning as the normal style
+commands:
+
+    {}          as default
+    {**} {/**}  as bold
+    {*} {/*}    as italic
+    {=} {/=}    as reverse
+    {R}         as red
+    {G}         as green
+    {B}         as blue
+    {/}         as /color and /bg.color
 
 -F supports styles too. More about this option with -H fmt.
 

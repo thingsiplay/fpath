@@ -475,15 +475,16 @@ global:
 {}, {reset}, {default}
 
 effects:
-{bold}, {italic}, {dim}, {underline}, {dunderline}, {overline, {strike},
-{blink}, {reverse}, {hide}
+{bold}, {**}, {italic}, {*}, {dim}, {underline}, {dunderline}, {overline,
+{strike}, {blink}, {reverse}, {=}, {hide}
 
 effects off:
-{/bold}, {/italic}, {/dim}, {/underline}, {/dunderline}, {/overline},
-{/reverse}, {/strike}, {/blink}, {/hide}
+{/bold}, {/**}, {/italic}, {/*}, {/dim}, {/underline}, {/dunderline},
+{/overline}, {/reverse}, {/strike}, {/=}, {/blink}, {/hide}
 
 foreground colors:
-{dark}, {white}, {red}, {green}, {blue}, {yellow}, {magenta}, {cyan}
+{dark}, {white}, {red}, {R}, {green}, {G}, {blue}, {B}, {yellow}, {magenta},
+{cyan}
 
 bright foreground colors:
 {bdark}, {bwhite}, {bred}, {bgreen}, {bblue}, {byellow}, {bmagenta}, {bcyan}
@@ -497,7 +498,7 @@ bright background colors:
 {bg.bmagenta}, {bg.bcyan}
 
 colors off:
-{/color}, {/bg.color}
+{/}, {/color}, {/bg.color}
 ```
 
 Have a great rest of your day.
