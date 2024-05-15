@@ -386,6 +386,7 @@ fpath --explain style_compact
 {mime}: short mime information based on file content (slow)
 {owner}: name of owner from file
 {group}: name of group from file owner
+{isvalid}: 1=if existing on disk, 0=if not
 {.stat}: unprocessed file stat results
 {.mode}: file permissions
 {.perm}: same as {.mode}
