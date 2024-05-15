@@ -599,7 +599,7 @@ class App:
                     fmt = fmt.replace("{.latime}", time(lst.st_atime))
                 if "{.lmtime}" in fmt:
                     fmt = fmt.replace("{.lmtime}", time(lst.st_mtime))
-                if "{.lctme}" in fmt:
+                if "{.lctime}" in fmt:
                     fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
                 if "{.l" in fmt:
                     if "ltime:" in fmt:
@@ -650,7 +650,7 @@ class App:
                     fmt = fmt.replace("{.atime}", time(st.st_atime))
                 if "{.mtime}" in fmt:
                     fmt = fmt.replace("{.mtime}", time(st.st_mtime))
-                if "{.ctme}" in fmt:
+                if "{.ctime}" in fmt:
                     fmt = fmt.replace("{.ctime}", time(st.st_ctime))
                 if "{." in fmt:
                     if "time:" in fmt:
