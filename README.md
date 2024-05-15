@@ -236,6 +236,47 @@ playlists.zip
 
 ```
 
+Display any custom text conditionally, if its a directory `{.isdir:text}`, a
+regular file `{.isreg:text}` or a symbolic link `{.islink:text}`. The `text`
+portion is only written, if the condition is met.
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{name}\n\t-> {.isdir:directory}\n'
+Arcade - A-Z Uncommon Arcade Games.lpl
+        ->
+
+emojicherrypick
+        -> directory
+
+new.png
+        ->
+
+playlists.zip
+        ->
+
+```
+
+We can even nest other variables inside the `text` (however this is not
+extensively tested yet, so you should be careful):
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F'{name}\n\t-> {.isdir:"{path}/"}\n'
+Arcade - A-Z Uncommon Arcade Games.lpl
+        ->
+
+emojicherrypick
+        -> "/home/tuncay/Desktop/My Files/emojicherrypick/"
+
+new.png
+        ->
+
+playlists.zip
+        ->
+
+```
+
 Let's add some more information to the output, such as the file permissions and
 file size (but with double colon and without arrow this time):
 
