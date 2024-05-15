@@ -390,9 +390,9 @@ fpath --explain style_compact
 {.stat}: unprocessed file stat results
 {.mode}: file permissions
 {.perm}: same as {.mode}
-{.isdir}: 1=if a directory, 0=if not
-{.isreg}: 1=if a regular file, 0=if not
-{.islink}: 1=if a symbolic link, 0=if not
+{.isdir:text}: text if existing directory, empty otherwise
+{.isreg:text}: text if existing regular file, empty otherwise
+{.islink:text}: text if existing symbolic link, empty otherwise
 {.dev}: device id where this file resides
 {.uid}: user id number from file owner
 {.gid}: group id number from file owner
@@ -411,9 +411,9 @@ fpath --explain style_compact
 {.lstat}: same as {.stat}, but do not follow symlinks
 {.lmode}: same as {.mode}, but do not follow symlinks
 {.lperm}: same as {.perm}, but do not follow symlinks
-{.lisdir}: same as {.isdir}, but do not follow symlinks
-{.lisreg}: same as {.isreg}, but do not follow symlinks
-{.lislink}: same as {.islink}, but do not follow symlinks
+{.lisdir:text}: same as {.isdir:text}, but do not follow links
+{.lisreg:text}: same as {.isreg:text}, but do not follow links
+{.lislink:text}: same as {.islink:text}, but do not follow links
 {.ldev}: same as {.dev}, but do not follow symlinks
 {.luid}: same as {.uid}, but do not follow symlinks
 {.lgid}: same as {.gid}, but do not follow symlinks
