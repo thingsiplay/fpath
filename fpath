@@ -233,9 +233,10 @@ def supported_fmt_commands() -> dict[str, str]:
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
         ".perm": "same as {.mode}",
-        ".isdir:text": "text if existing directory, empty otherwise",
-        ".isreg:text": "text if existing regular file, empty otherwise",
-        ".islink:text": "text if existing symbolic link, empty otherwise",
+        ".isdir": "add a true path separator character if its a directory",
+        ".isdir:text": "any text if existing directory, empty otherwise",
+        ".isreg:text": "any text if existing regular file, empty otherwise",
+        ".islink:text": "any text if existing symbolic link, empty otherwise",
         ".dev": "device id where this file resides",
         ".uid": "user id number from file owner",
         ".gid": "group id number from file owner",
@@ -254,6 +255,7 @@ def supported_fmt_commands() -> dict[str, str]:
         ".lstat": "same as {.stat}, but do not follow links",
         ".lmode": "same as {.mode}, but do not follow links",
         ".lperm": "same as {.perm}, but do not follow links",
+        ".lisdir": "same as {.isdir}, but do not follow links",
         ".lisdir:text": "same as {.isdir:text}, but do not follow links",
         ".lisreg:text": "same as {.isreg:text}, but do not follow links",
         ".lislink:text": "same as {.islink:text}, but do not follow links",
@@ -587,6 +589,8 @@ class App:
                 if "{.lmo" in fmt:
                     fmt = fmt.replace("{.lmode}", str(filemode(lst.st_mode)))
                 if "{.lisd" in fmt:
+                    if "{.lisdir}" in fmt:
+                        fmt = fmt.replace("{.lisdir}", "\x04")
                     for arg in re_lisdir.findall(fmt):
                         if S_ISDIR(lst.st_mode):
                             repl = arg
@@ -653,6 +657,8 @@ class App:
                 if "{.mo" in fmt:
                     fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
                 if "{.isd" in fmt:
+                    if "{.isdir}" in fmt:
+                        fmt = fmt.replace("{.isdir}", "\x04")
                     for arg in re_isdir.findall(fmt):
                         if S_ISDIR(st.st_mode):
                             repl = arg

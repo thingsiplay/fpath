@@ -431,6 +431,7 @@ fpath --explain style_compact
 {.stat}: unprocessed file stat results
 {.mode}: file permissions
 {.perm}: same as {.mode}
+{.isdir}: add a true path separator character if its a directory
 {.isdir:text}: text if existing directory, empty otherwise
 {.isreg:text}: text if existing regular file, empty otherwise
 {.islink:text}: text if existing symbolic link, empty otherwise
@@ -452,6 +453,7 @@ fpath --explain style_compact
 {.lstat}: same as {.stat}, but do not follow symlinks
 {.lmode}: same as {.mode}, but do not follow symlinks
 {.lperm}: same as {.perm}, but do not follow symlinks
+{.lisdir}: same as {.isdir}, but do not follow links
 {.lisdir:text}: same as {.isdir:text}, but do not follow links
 {.lisreg:text}: same as {.isreg:text}, but do not follow links
 {.lislink:text}: same as {.islink:text}, but do not follow links
