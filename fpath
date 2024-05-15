@@ -24,7 +24,7 @@ class fmtPath:
         base: Path | None,
         tilde: bool,
         quotes: str,
-        dot: bool,
+        leading_dot: bool,
     ) -> None:
         self.origin = path
         # work_path does not contain all configurations and is not intended for
@@ -43,33 +43,23 @@ class fmtPath:
 
         self.lazy_tilde: bool = tilde
         self.lazy_quotes: str = quotes
-        self.with_leading_dot: bool = dot
+        self.with_leading_dot: bool = leading_dot
         self.exists_cache: bool | None = None
         return
 
     def __str__(self) -> str:
-        if self.with_leading_dot and not self.lazy_tilde:
-            path = self.path
-            if not path.is_absolute():
-                leading_dot = "./"
-            else:
-                leading_dot = ""
-            return self.lazy_quotes + leading_dot + path.as_posix() + self.lazy_quotes
+        if (
+            self.with_leading_dot
+            and not self.lazy_tilde
+            and not self.path.is_absolute()
+        ):
+            dot = "./"
         else:
-            return self.lazy_quotes + self.path.as_posix() + self.lazy_quotes
+            dot = ""
+        return self.lazy_quotes + dot + self.path.as_posix() + self.lazy_quotes
 
     def __repr__(self) -> str:
-        if self.with_leading_dot and not self.lazy_tilde:
-            path = self.path
-            if not path.is_absolute():
-                leading_dot = "./"
-            else:
-                leading_dot = ""
-            return repr(
-                self.lazy_quotes + leading_dot + path.as_posix() + self.lazy_quotes
-            )
-        else:
-            return repr(self.lazy_quotes + self.path.as_posix() + self.lazy_quotes)
+        return repr(self.__str__())
 
     @property
     def path(self) -> Path:
@@ -352,7 +342,7 @@ class App:
         else:
             self.sep_style = None
 
-        self.dot = args.dot
+        self.leading_dot = args.dot
         self.tilde = args.tilde
 
         self.paths: list[fmtPath] = [
@@ -363,7 +353,7 @@ class App:
                 args.base,
                 self.tilde,
                 self.quotes,
-                self.dot,
+                self.leading_dot,
             )
             for p in input_paths
         ]
@@ -424,7 +414,7 @@ class App:
             return text.replace("{", "\x02").replace("}", "\x03")
 
         def escape_and_quote(text: str, is_absolute: bool) -> str:
-            if self.dot and not self.tilde and not is_absolute:
+            if self.leading_dot and not self.tilde and not is_absolute:
                 leading_dot = "./"
             else:
                 leading_dot = ""
