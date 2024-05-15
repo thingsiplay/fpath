@@ -41,9 +41,10 @@ class fmtPath:
         elif absolute:
             self.work_path = self.work_path.absolute()
 
-        self.lazy_tilde = tilde
-        self.lazy_quotes = quotes
-        self.with_leading_dot = dot
+        self.lazy_tilde: bool = tilde
+        self.lazy_quotes: str = quotes
+        self.with_leading_dot: bool = dot
+        self.file_exists: bool | None = None
         return
 
     def __str__(self) -> str:
@@ -83,8 +84,11 @@ class fmtPath:
                 pass
         return path
 
+    @property
     def exists(self) -> bool:
-        return self.work_path.exists()
+        if self.file_exists is None:
+            self.file_exists = self.work_path.exists()
+        return self.file_exists
 
 
 def escape_slash(source: str, sep: str):
@@ -376,9 +380,9 @@ class App:
             self.exclude = []
 
         if args.existing:
-            self.paths = [p for p in self.paths if p.exists()]
+            self.paths = [p for p in self.paths if p.exists]
         elif args.missing:
-            self.paths = [p for p in self.paths if not p.exists()]
+            self.paths = [p for p in self.paths if not p.exists]
 
         self.format = args.format
         self.no_last_lineend = args.no_last_lineend
@@ -555,116 +559,106 @@ class App:
 
             # lstats
             # NOTE: Make sure to be in sync with stats.
-            if "{.l" in fmt:
+            # Also test for entry.exists directly, as this will change the state.
+            if "{.l" in fmt and entry.exists:
                 # https://docs.python.org/3/library/os.html#os.stat_result
-                try:
-                    lst = entry.path.expanduser().lstat()
-                except FileNotFoundError:
-                    fmt = re_lstats.sub("", fmt)
-                else:
-                    if "{.lst" in fmt:
-                        fmt = fmt.replace(
-                            "{.lstat}", str(lst).removeprefix("os.stat_result")
-                        )
-                    if "{.lpe" in fmt:
-                        fmt = fmt.replace("{.lperm}", "{.lmode}")
-                    if "{.lmo" in fmt:
-                        fmt = fmt.replace("{.lmode}", str(filemode(lst.st_mode)))
-                    if "{.lisd" in fmt:
-                        fmt = fmt.replace("{.lisdir}", str(int(S_ISDIR(lst.st_mode))))
-                    if "{.lisr" in fmt:
-                        fmt = fmt.replace("{.lisreg}", str(int(S_ISREG(lst.st_mode))))
-                    if "{.lisl" in fmt:
-                        fmt = fmt.replace("{.lislink}", str(int(S_ISLNK(lst.st_mode))))
-                    if "{.lde" in fmt:
-                        fmt = fmt.replace("{.ldev}", str(lst.st_dev))
-                    if "{.lui" in fmt:
-                        fmt = fmt.replace("{.luid}", str(lst.st_uid))
-                    if "{.lgi" in fmt:
-                        fmt = fmt.replace("{.lgid}", str(lst.st_gid))
-                    if "{.lnl" in fmt:
-                        fmt = fmt.replace("{.lnlink}", str(lst.st_nlink))
-                    if "{.lsi" in fmt:
-                        fmt = fmt.replace("{.lsize}", file_size_with_unit(lst.st_size))
-                    if "{.lb}" in fmt:
-                        fmt = fmt.replace("{.lb}", file_size(lst.st_size))
-                    if "{.lkb}" in fmt:
-                        fmt = fmt.replace("{.lkb}", file_size(lst.st_size, KB_UNIT))
-                    if "{.lmb}" in fmt:
-                        fmt = fmt.replace("{.lmb}", file_size(lst.st_size, MB_UNIT))
-                    if "{.lgb}" in fmt:
-                        fmt = fmt.replace("{.lgb}", file_size(lst.st_size, GB_UNIT))
-                    if "{.latime}" in fmt:
-                        fmt = fmt.replace("{.latime}", time(lst.st_atime))
-                    if "{.lmtime}" in fmt:
-                        fmt = fmt.replace("{.lmtime}", time(lst.st_mtime))
-                    if "{.lctme}" in fmt:
-                        fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
-                    if "{.l" in fmt:
-                        if "ltime:" in fmt:
-                            fmt = self.time_custom_arg(
-                                lst.st_atime, "la", re_latime, fmt
-                            )
-                            fmt = self.time_custom_arg(
-                                lst.st_mtime, "lm", re_lmtime, fmt
-                            )
-                            fmt = self.time_custom_arg(
-                                lst.st_ctime, "lc", re_lctime, fmt
-                            )
+                lst = path.expanduser().lstat()
+                if "{.lst" in fmt:
+                    fmt = fmt.replace(
+                        "{.lstat}", str(lst).removeprefix("os.stat_result")
+                    )
+                if "{.lpe" in fmt:
+                    fmt = fmt.replace("{.lperm}", "{.lmode}")
+                if "{.lmo" in fmt:
+                    fmt = fmt.replace("{.lmode}", str(filemode(lst.st_mode)))
+                if "{.lisd" in fmt:
+                    fmt = fmt.replace("{.lisdir}", str(int(S_ISDIR(lst.st_mode))))
+                if "{.lisr" in fmt:
+                    fmt = fmt.replace("{.lisreg}", str(int(S_ISREG(lst.st_mode))))
+                if "{.lisl" in fmt:
+                    fmt = fmt.replace("{.lislink}", str(int(S_ISLNK(lst.st_mode))))
+                if "{.lde" in fmt:
+                    fmt = fmt.replace("{.ldev}", str(lst.st_dev))
+                if "{.lui" in fmt:
+                    fmt = fmt.replace("{.luid}", str(lst.st_uid))
+                if "{.lgi" in fmt:
+                    fmt = fmt.replace("{.lgid}", str(lst.st_gid))
+                if "{.lnl" in fmt:
+                    fmt = fmt.replace("{.lnlink}", str(lst.st_nlink))
+                if "{.lsi" in fmt:
+                    fmt = fmt.replace("{.lsize}", file_size_with_unit(lst.st_size))
+                if "{.lb}" in fmt:
+                    fmt = fmt.replace("{.lb}", file_size(lst.st_size))
+                if "{.lkb}" in fmt:
+                    fmt = fmt.replace("{.lkb}", file_size(lst.st_size, KB_UNIT))
+                if "{.lmb}" in fmt:
+                    fmt = fmt.replace("{.lmb}", file_size(lst.st_size, MB_UNIT))
+                if "{.lgb}" in fmt:
+                    fmt = fmt.replace("{.lgb}", file_size(lst.st_size, GB_UNIT))
+                if "{.latime}" in fmt:
+                    fmt = fmt.replace("{.latime}", time(lst.st_atime))
+                if "{.lmtime}" in fmt:
+                    fmt = fmt.replace("{.lmtime}", time(lst.st_mtime))
+                if "{.lctme}" in fmt:
+                    fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
+                if "{.l" in fmt:
+                    if "ltime:" in fmt:
+                        fmt = self.time_custom_arg(lst.st_atime, "la", re_latime, fmt)
+                        fmt = self.time_custom_arg(lst.st_mtime, "lm", re_lmtime, fmt)
+                        fmt = self.time_custom_arg(lst.st_ctime, "lc", re_lctime, fmt)
+            else:
+                fmt = re_lstats.sub("", fmt)
 
             # stats
             # NOTE: Make sure to be in sync with lstats. And do not name these
             # starting with {.l !
-            if "{." in fmt:
+            # Also test for entry.exists directly, as this will change the state.
+            if "{." in fmt and entry.exists:
                 # https://docs.python.org/3/library/os.html#os.stat_result
-                try:
-                    st = entry.path.expanduser().stat()
-                except FileNotFoundError:
-                    fmt = re_stats.sub("", fmt)
-                else:
-                    if "{.st" in fmt:
-                        fmt = fmt.replace(
-                            "{.stat}", str(st).removeprefix("os.stat_result")
-                        )
-                    if "{.pe" in fmt:
-                        fmt = fmt.replace("{.perm}", "{.mode}")
-                    if "{.mo" in fmt:
-                        fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
-                    if "{.isd" in fmt:
-                        fmt = fmt.replace("{.isdir}", str(int(S_ISDIR(st.st_mode))))
-                    if "{.isr" in fmt:
-                        fmt = fmt.replace("{.isreg}", str(int(S_ISREG(st.st_mode))))
-                    if "{.isl" in fmt:
-                        fmt = fmt.replace("{.islink}", str(int(S_ISLNK(st.st_mode))))
-                    if "{.de" in fmt:
-                        fmt = fmt.replace("{.dev}", str(st.st_dev))
-                    if "{.ui" in fmt:
-                        fmt = fmt.replace("{.uid}", str(st.st_uid))
-                    if "{.gi" in fmt:
-                        fmt = fmt.replace("{.gid}", str(st.st_gid))
-                    if "{.nl" in fmt:
-                        fmt = fmt.replace("{.nlink}", str(st.st_nlink))
-                    if "{.si" in fmt:
-                        fmt = fmt.replace("{.size}", file_size_with_unit(st.st_size))
-                    if "{.b}" in fmt:
-                        fmt = fmt.replace("{.b}", file_size(st.st_size))
-                    if "{.kb}" in fmt:
-                        fmt = fmt.replace("{.kb}", file_size(st.st_size, KB_UNIT))
-                    if "{.mb}" in fmt:
-                        fmt = fmt.replace("{.mb}", file_size(st.st_size, MB_UNIT))
-                    if "{.gb}" in fmt:
-                        fmt = fmt.replace("{.gb}", file_size(st.st_size, GB_UNIT))
-                    if "{.atime}" in fmt:
-                        fmt = fmt.replace("{.atime}", time(st.st_atime))
-                    if "{.mtime}" in fmt:
-                        fmt = fmt.replace("{.mtime}", time(st.st_mtime))
-                    if "{.ctme}" in fmt:
-                        fmt = fmt.replace("{.ctime}", time(st.st_ctime))
-                    if "{." in fmt:
-                        if "time:" in fmt:
-                            fmt = self.time_custom_arg(st.st_atime, "a", re_atime, fmt)
-                            fmt = self.time_custom_arg(st.st_mtime, "m", re_mtime, fmt)
-                            fmt = self.time_custom_arg(st.st_ctime, "c", re_ctime, fmt)
+                st = path.expanduser().stat()
+                if "{.st" in fmt:
+                    fmt = fmt.replace("{.stat}", str(st).removeprefix("os.stat_result"))
+                if "{.pe" in fmt:
+                    fmt = fmt.replace("{.perm}", "{.mode}")
+                if "{.mo" in fmt:
+                    fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
+                if "{.isd" in fmt:
+                    fmt = fmt.replace("{.isdir}", str(int(S_ISDIR(st.st_mode))))
+                if "{.isr" in fmt:
+                    fmt = fmt.replace("{.isreg}", str(int(S_ISREG(st.st_mode))))
+                if "{.isl" in fmt:
+                    fmt = fmt.replace("{.islink}", str(int(S_ISLNK(st.st_mode))))
+                if "{.de" in fmt:
+                    fmt = fmt.replace("{.dev}", str(st.st_dev))
+                if "{.ui" in fmt:
+                    fmt = fmt.replace("{.uid}", str(st.st_uid))
+                if "{.gi" in fmt:
+                    fmt = fmt.replace("{.gid}", str(st.st_gid))
+                if "{.nl" in fmt:
+                    fmt = fmt.replace("{.nlink}", str(st.st_nlink))
+                if "{.si" in fmt:
+                    fmt = fmt.replace("{.size}", file_size_with_unit(st.st_size))
+                if "{.b}" in fmt:
+                    fmt = fmt.replace("{.b}", file_size(st.st_size))
+                if "{.kb}" in fmt:
+                    fmt = fmt.replace("{.kb}", file_size(st.st_size, KB_UNIT))
+                if "{.mb}" in fmt:
+                    fmt = fmt.replace("{.mb}", file_size(st.st_size, MB_UNIT))
+                if "{.gb}" in fmt:
+                    fmt = fmt.replace("{.gb}", file_size(st.st_size, GB_UNIT))
+                if "{.atime}" in fmt:
+                    fmt = fmt.replace("{.atime}", time(st.st_atime))
+                if "{.mtime}" in fmt:
+                    fmt = fmt.replace("{.mtime}", time(st.st_mtime))
+                if "{.ctme}" in fmt:
+                    fmt = fmt.replace("{.ctime}", time(st.st_ctime))
+                if "{." in fmt:
+                    if "time:" in fmt:
+                        fmt = self.time_custom_arg(st.st_atime, "a", re_atime, fmt)
+                        fmt = self.time_custom_arg(st.st_mtime, "m", re_mtime, fmt)
+                        fmt = self.time_custom_arg(st.st_ctime, "c", re_ctime, fmt)
+            else:
+                fmt = re_stats.sub("", fmt)
 
             # styles: {red}
             if "{" in fmt:
