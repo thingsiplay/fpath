@@ -44,7 +44,7 @@ class fmtPath:
         self.lazy_tilde: bool = tilde
         self.lazy_quotes: str = quotes
         self.with_leading_dot: bool = dot
-        self.file_exists: bool | None = None
+        self.exists_cache: bool | None = None
         return
 
     def __str__(self) -> str:
@@ -86,9 +86,9 @@ class fmtPath:
 
     @property
     def exists(self) -> bool:
-        if self.file_exists is None:
-            self.file_exists = self.work_path.exists()
-        return self.file_exists
+        if self.exists_cache is None:
+            self.exists_cache = self.work_path.exists()
+        return self.exists_cache
 
 
 def escape_slash(source: str, sep: str):
