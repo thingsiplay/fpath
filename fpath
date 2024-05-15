@@ -224,9 +224,9 @@ def supported_fmt_commands() -> dict[str, str]:
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
         ".perm": "same as {.mode}",
-        ".isdir": "1=if a directory, 0=if not",
-        ".isreg": "1=if a regular file, 0=if not",
-        ".islink": "1=if a symbolic link, 0=if not",
+        ".isdir:text": "text if existing directory, empty otherwise",
+        ".isreg:text": "text if existing regular file, empty otherwise",
+        ".islink:text": "text if existing symbolic link, empty otherwise",
         ".dev": "device id where this file resides",
         ".uid": "user id number from file owner",
         ".gid": "group id number from file owner",
@@ -245,9 +245,9 @@ def supported_fmt_commands() -> dict[str, str]:
         ".lstat": "same as {.stat}, but do not follow links",
         ".lmode": "same as {.mode}, but do not follow links",
         ".lperm": "same as {.perm}, but do not follow links",
-        ".lisdir": "same as {.isdir}, but do not follow links",
-        ".lisreg": "same as {.isreg}, but do not follow links",
-        ".lislink": "same as {.islink}, but do not follow links",
+        ".lisdir:text": "same as {.isdir:text}, but do not follow links",
+        ".lisreg:text": "same as {.isreg:text}, but do not follow links",
+        ".lislink:text": "same as {.islink:text}, but do not follow links",
         ".ldev": "same as {.dev}, but do not follow links",
         ".luid": "same as {.uid}, but do not follow links",
         ".lgid": "same as {.gid}, but do not follow links",
@@ -456,6 +456,18 @@ class App:
         re_lmtime = re_compile(r"\.lmtime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
         # {.lctime:ARGS}
         re_lctime = re_compile(r"\.lctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
+        # {.isdir:ARGS}
+        re_isdir = re_compile(r"{\.isdir:([^{}]+?)}")
+        # {.isreg:ARGS}
+        re_isreg = re_compile(r"{\.isreg:([^{}]+?)}")
+        # {.islink:ARGS}
+        re_islink = re_compile(r"{\.islink:([^{}]+?)}")
+        # {.lisdir:ARGS}
+        re_lisdir = re_compile(r"{\.lisdir:([^{}]+?)}")
+        # {.lisreg:ARGS}
+        re_lisreg = re_compile(r"{\.lisreg:([^{}]+?)}")
+        # {.lislink:ARGS}
+        re_lislink = re_compile(r"{\.lislink:([^{}]+?)}")
 
         # For use as unit in size calculation.
         KB_UNIT = 1024
@@ -566,11 +578,26 @@ class App:
                 if "{.lmo" in fmt:
                     fmt = fmt.replace("{.lmode}", str(filemode(lst.st_mode)))
                 if "{.lisd" in fmt:
-                    fmt = fmt.replace("{.lisdir}", str(int(S_ISDIR(lst.st_mode))))
+                    for arg in re_lisdir.findall(fmt):
+                        if S_ISDIR(lst.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.lisdir:" + arg + "}", repl)
                 if "{.lisr" in fmt:
-                    fmt = fmt.replace("{.lisreg}", str(int(S_ISREG(lst.st_mode))))
+                    for arg in re_lisreg.findall(fmt):
+                        if S_ISREG(lst.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.lisreg:" + arg + "}", repl)
                 if "{.lisl" in fmt:
-                    fmt = fmt.replace("{.lislink}", str(int(S_ISLNK(lst.st_mode))))
+                    for arg in re_lislink.findall(fmt):
+                        if S_ISLNK(lst.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.lislink:" + arg + "}", repl)
                 if "{.lde" in fmt:
                     fmt = fmt.replace("{.ldev}", str(lst.st_dev))
                 if "{.lui" in fmt:
@@ -617,11 +644,26 @@ class App:
                 if "{.mo" in fmt:
                     fmt = fmt.replace("{.mode}", str(filemode(st.st_mode)))
                 if "{.isd" in fmt:
-                    fmt = fmt.replace("{.isdir}", str(int(S_ISDIR(st.st_mode))))
+                    for arg in re_isdir.findall(fmt):
+                        if S_ISDIR(st.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.isdir:" + arg + "}", repl)
                 if "{.isr" in fmt:
-                    fmt = fmt.replace("{.isreg}", str(int(S_ISREG(st.st_mode))))
+                    for arg in re_isreg.findall(fmt):
+                        if S_ISREG(st.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.isreg:" + arg + "}", repl)
                 if "{.isl" in fmt:
-                    fmt = fmt.replace("{.islink}", str(int(S_ISLNK(st.st_mode))))
+                    for arg in re_islink.findall(fmt):
+                        if S_ISLNK(st.st_mode):
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{.islink:" + arg + "}", repl)
                 if "{.de" in fmt:
                     fmt = fmt.replace("{.dev}", str(st.st_dev))
                 if "{.ui" in fmt:
