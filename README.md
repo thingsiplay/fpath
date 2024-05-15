@@ -277,6 +277,31 @@ playlists.zip
 
 ```
 
+Notice that with the above code `{path}/`, the last added slash is just an
+arbitrary character and not a true path separator. Therefore it would not get
+the special treatment with the coloring option `-s red` or changing its form
+with option `-/' -> '` in example. There is a special `{.isdir}` variant
+without arguments like in `{.isdir:text}` . There is no text to select, as it
+outputs a separator instead that inherits all the abilities from a path. Try
+it out with and without `-s red` option:
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -s red -F'{name}\n\t-> {.isdir:"{path}{.isdir}"}\n'
+Arcade - A-Z Uncommon Arcade Games.lpl
+        ->
+
+emojicherrypick
+        -> "/home/tuncay/Desktop/My Files/emojicherrypick/"
+
+new.png
+        ->
+
+playlists.zip
+        ->
+
+```
+
 Let's add some more information to the output, such as the file permissions and
 file size (but with double colon and without arrow this time):
 
