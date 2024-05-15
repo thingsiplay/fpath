@@ -437,40 +437,28 @@ class App:
 
         # {N:N} examples: {-1:} {2:4}
         re_slice = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
-
         # {rjust:N}{/rjust}
         re_rjust = re_compile(r"{rjust:([0-9]+?)}(.*?){/rjust}")
-
         # {ljust:N}{/ljust}
         re_ljust = re_compile(r"{ljust:([0-9]+?)}(.*?){/ljust}")
-
         # {center:N}{/center}
         re_center = re_compile(r"{center:([0-9]+?)}(.*?){/center}")
-
         # {fill:N}{/fill}
         re_fill = re_compile(r"{fill:([0-9]+?)}(.*?){/fill}")
-
         # {.ANY} examples: {.stats} {.isdir}
         re_stats = re_compile(r"{\.[^{}]+?}")
-
         # {.lANY} examples: {.lstats} {.lisdir}
         re_lstats = re_compile(r"{\.l[^{}]+?}")
-
         # {.atime:ARGS}
         re_atime = re_compile(r"\.atime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
-
         # {.mtime:ARGS}
         re_mtime = re_compile(r"\.mtime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
-
         # {.ctime:ARGS}
         re_ctime = re_compile(r"\.ctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
-
         # {.latime:ARGS}
         re_latime = re_compile(r"\.latime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
-
         # {.lmtime:ARGS}
         re_lmtime = re_compile(r"\.lmtime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
-
         # {.lctime:ARGS}
         re_lctime = re_compile(r"\.lctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
 
