@@ -395,6 +395,33 @@ such as `{-1:}` to access file name or `{3:5}` to get fourth and fifth element.
 No, this is not at typo. Counting starts by 0 and the end index is where to
 stop, without including it. Just test and play around with it to understand.
 
+With a recent update a new command is available to run arbitrary programs. Any
+DATA enclosed between {!prog:args}DATA{/!} will be taken as stdin stream to the
+program. And it's output will replace DATA:
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ time find ./* -maxdepth 0 | fpath -F '{!grep:-i -E "^\w+$"}{name}{/!}'
+
+emojicherrypick
+
+
+```
+
+If nothing is specified in DATA, such as {!prog:args}{/!} , then program is
+executed without stdin stream, but its output will still be printed out in that
+place. Notice in this example we need surrounding quotes for the arguments of
+the program:
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ time find ./* -maxdepth 0 | fpath -F '{!md5sum:"{path}"}{/!}'
+6079b16fceede79ed1c9b797ba07ad37  Arcade - A-Z Uncommon Arcade Games.lpl
+
+8bf704f44b5231caee4a26d4f4a61645  new.png
+6c814dd890934b71f9538240db103795  playlists.zip
+```
+
 I hope this helps in understanding what this tool can do and if it is for you.
 
 ### Control sequences overview
@@ -497,6 +524,8 @@ fpath --explain style_compact
 {.latime:args}: same as {.atime:args}, but do not follow symlinks
 {.lmtime:args}: same as {.mtime:args}, but do not follow symlinks
 {.lctime:args}: same as {.ctime:args}, but do not follow symlinks
+{!prog:args}DATA{/!}: run any program to replace DATA (very, VERY slow)
+{/!}: end marker for !
 
 global:
 {}, {reset}, {default}

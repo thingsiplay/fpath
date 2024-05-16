@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from sys import exit, stdin
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, DEVNULL
+from shlex import split as shlex_split
 from argparse import ArgumentParser
 from argparse import Namespace as ArgumentNamespace
 from pathlib import Path
@@ -274,6 +275,8 @@ def supported_fmt_commands() -> dict[str, str]:
         ".latime:args": "same as {.atime:args}, but do not follow links",
         ".lmtime:args": "same as {.mtime:args}, but do not follow links",
         ".lctime:args": "same as {.ctime:args}, but do not follow links",
+        "!prog:args": "run any program to replace DATA (very, VERY slow)",
+        "/!": "end marker for !",
     }
 
 
@@ -317,6 +320,36 @@ def filetypes(source, hash_entries, arg: str | None = None):
                 source = fmt.replace(id, p)
                 output.append(source)
     return output
+
+
+def run_prog(cmd: list[str], stdin_data: str | None = None) -> str:
+    result = None
+    if stdin_data is None:
+        process = Popen(
+            cmd,
+            shell=False,
+            stdout=PIPE,
+            stderr=DEVNULL,
+            text=True,
+        )
+        result = process.communicate()[0]
+    else:
+        process = Popen(
+            cmd,
+            shell=False,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=DEVNULL,
+            text=True,
+        )
+        if process.stdin:
+            process.stdin.write(stdin_data)
+            result = process.communicate()[0]
+            process.stdin.close()
+    if result:
+        return result.strip()
+    else:
+        return ""
 
 
 class App:
@@ -479,6 +512,13 @@ class App:
         re_lisreg = re_compile(r"{\.lisreg:([^{}]+?)}")
         # {.lislink:ARGS}
         re_lislink = re_compile(r"{\.lislink:([^{}]+?)}")
+
+        # {!prog:args}data{!/} or {!prog}data{!/}
+        #   - args is optional and will be appended as arguments to program,
+        #   - data is optional and will be used as stdin to feed program,
+        #   - if no data is specified, then program is called without input,
+        #   - either way data is replaced by programs stdout
+        re_run = re_compile(r"{!([-_a-zA-Z0-9]+?)(:([^{}]*?))?}(.*?){/!}")
 
         # For use as unit in size calculation.
         KB_UNIT = 1024
@@ -806,6 +846,30 @@ class App:
                         1,
                     )
 
+            # {!prog:args}DATA{/!}
+            # {!prog}{/!}
+            if "{!" in fmt:
+                for m in re_run.findall(fmt):
+                    prog = m[0]
+                    args = m[2]
+                    stdin_data = m[3]
+                    cmd: list[str] = [prog] + shlex_split(args)
+                    un_cmd = [unescape_slash(unescape(c), self.sep) for c in cmd]
+                    output: str = ""
+                    if stdin_data == "":
+                        output = run_prog(un_cmd)
+                    else:
+                        un_stdin_data = unescape_slash(unescape(stdin_data), self.sep)
+                        output = run_prog(un_cmd, un_stdin_data)
+                    un_output = unescape_slash(unescape(output), self.sep)
+                    if m[1] == "":
+                        call = prog
+                    else:
+                        call = f"{prog}:{args}"
+                    fmt = fmt.replace(
+                        "{!" + f"{call}" + "}" + stdin_data + "{/!}", un_output
+                    )
+
             entries.append(unescape(fmt))
 
         if hash_file_entries:
@@ -930,6 +994,18 @@ path pointing to the file itself is a symlink and not its target. Good example
 to test on is the file ~/.steampid .
 
     -F'{.islink} != {.lislink}'
+
+Run any program with the run command, to filter stdin data and output its
+stdout. Base structure of command is {!prog:args}DATA{/!}, where prog is the
+name of the program. args are arguments given over to the program and is
+optional. DATA, the area between start tag and its closing tag will be used as
+stdin stream to the calling program, and its stdout will replace DATA. However
+if DATA area is empty, then program runs without stdin stream, but its output
+will still be printed.
+
+    -F '{!grep:-i Car}{path}{/!}'
+    -F '{!sed:"s/home/hell"}{path}{/!}'
+    -F '{!md5sum:"{path}"}{/!}'
 
 All style commands are also available. List them with -H style.
 
