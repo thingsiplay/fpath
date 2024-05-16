@@ -354,7 +354,7 @@ def run_prog(cmd: list[str], stdin_data: str | None = None) -> str:
 
 class App:
     name: str = "fpath"
-    version: str = "0.7"
+    version: str = "0.8"
 
     def __init__(self, args: ArgumentNamespace) -> None:
         self.print_version: bool = args.version
