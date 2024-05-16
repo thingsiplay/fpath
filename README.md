@@ -216,6 +216,8 @@ $ find ./* -maxdepth 0
 ./playlists.zip
 ```
 
+#### Multi line output
+
 Let's turn the tables and get to the meat. Show base name of file, with it's
 directory part below, indicated by an arrow:
 
@@ -235,6 +237,8 @@ playlists.zip
         -> /home/tuncay/Desktop/My Files
 
 ```
+
+#### Conditional output
 
 Display any custom text conditionally, if its a directory `{.isdir:text}`, a
 regular file `{.isreg:text}` or a symbolic link `{.islink:text}`. The `text`
@@ -257,6 +261,8 @@ playlists.zip
 
 ```
 
+#### Nest other variables in conditions
+
 We can even nest other variables inside the `text` (however this is not
 extensively tested yet, so you should be careful):
 
@@ -276,6 +282,8 @@ playlists.zip
         ->
 
 ```
+
+#### True directory path separator
 
 Notice that with the above code `{path}/`, the last added slash is just an
 arbitrary character and not a true path separator. Therefore it would not get
@@ -301,6 +309,8 @@ playlists.zip
         ->
 
 ```
+
+#### File size and permissions
 
 Let's add some more information to the output, such as the file permissions and
 file size (but with double colon and without arrow this time):
@@ -330,6 +340,8 @@ playlists.zip:
 
 ```
 
+#### ls like output with MIME of file
+
 Wanna have a format that is more familiar? Here we have added the mime type
 with {mime} as well, which works by looking into file content with standard
 Linux program `file`. It's called only once for all paths together, therefore
@@ -343,6 +355,8 @@ drwxr-xr-x      4.0 KB  binary          emojicherrypick
 -rw-r--r--      71.1 KB binary          new.png
 -rw-r--r--      14.5 KB binary          playlists.zip
 ```
+
+#### Colors with style
 
 In `-F` option we can also use the various color and effects commands, such as
 `{yellow}` in example. Unlike in option `-s`, we have to put them in curly
@@ -363,6 +377,8 @@ $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}{/color}\t{na
 
 ![screenshot: bold yellow style](img/bold_yellow.png)
 
+#### Wanna a date?
+
 Time and date can be displayed with `{.atime}` for last access, `{.mtime}` for
 last modification and `{.ctime}` for last change in a human readable format.
 
@@ -374,6 +390,8 @@ Wednesday, April 13, 2022 06:18:43      emojicherrypick
 Wednesday, April 10, 2024 07:13:06      new.png
 Saturday, May 04, 2024 04:40:03         playlists.zip
 ```
+
+#### Custom date format
 
 Time commands have a special variant allowing for custom formatting. Their
 options are separated by double color, like this `{.mtime:options}`. The
@@ -389,11 +407,35 @@ $ find ./* -maxdepth 0 | fpath -a -F'{.mtime:%Y/%m/%d}\t{name}'
 2024/05/04      playlists.zip
 ```
 
+#### Slice any parts
+
 There are so many more commands and functionality. Such as slices in form of
 `{start:end}` even supporting negative numbers, to get any part of the path,
 such as `{-1:}` to access file name or `{3:5}` to get fourth and fifth element.
 No, this is not at typo. Counting starts by 0 and the end index is where to
 stop, without including it. Just test and play around with it to understand.
+
+```bash
+$ cd ~/Desktop/My" "Files/
+$ find ./* -maxdepth 0 | fpath -a -F '{path}\n\t{2:4}\n\t{-3:}\n'
+/home/tuncay/Desktop/My Files/Arcade - A-Z Uncommon Arcade Games.lpl
+tuncay/Desktop
+Desktop/My Files/Arcade - A-Z Uncommon Arcade Games.lpl
+
+/home/tuncay/Desktop/My Files/emojicherrypick
+tuncay/Desktop
+Desktop/My Files/emojicherrypick
+
+/home/tuncay/Desktop/My Files/new.png
+tuncay/Desktop
+Desktop/My Files/new.png
+
+/home/tuncay/Desktop/My Files/playlists.zip
+tuncay/Desktop
+Desktop/My Files/playlists.zip
+```
+
+#### Filter through running any program
 
 With a recent update a new command is available to run arbitrary programs. Any
 DATA enclosed between {!prog:args}DATA{/!} will be taken as stdin stream to the
@@ -421,6 +463,9 @@ $ time find ./* -maxdepth 0 | fpath -F '{!md5sum:"{path}"}{/!}'
 8bf704f44b5231caee4a26d4f4a61645  new.png
 6c814dd890934b71f9538240db103795  playlists.zip
 ```
+
+However this approach running programs with {!prog command is very slow. In
+fact, it will create a new shell process for every single line. So be careful.
 
 I hope this helps in understanding what this tool can do and if it is for you.
 
