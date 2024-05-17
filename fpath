@@ -231,6 +231,7 @@ def supported_fmt_commands() -> dict[str, str]:
         "owner": "name of owner from file",
         "group": "name of group from file owner",
         "isvalid": "1=if existing on disk, 0=if not",
+        "isnotvalid": "1=if does not existing on disk, 0=if it does",
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
         ".perm": "same as {.mode}",
@@ -613,6 +614,9 @@ class App:
 
             if "{isvalid}" in fmt:
                 fmt = fmt.replace("{isvalid}", str(int(entry.exists)))
+
+            if "{isnotvalid}" in fmt:
+                fmt = fmt.replace("{isnotvalid}", str(int(not entry.exists)))
 
             # lstats
             # NOTE: Make sure to be in sync with stats.
