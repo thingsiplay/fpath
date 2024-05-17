@@ -80,7 +80,7 @@ about the files on the file system. This command is only run once for all files
 in process, and therefore is as fast as it can get; but still considerably
 slower than other commands.
 
-NOTE: Known limitation with the `{center}`, `{rjust}`, `{ljust}` and `{fill}`
+NOTE: Known limitation with the `{center}`, `{right}`, `{left}` and `{fill}`
 commands, which do not affect these commands. That's because this `file`
 process is run at last after the formatting.
 
@@ -172,9 +172,9 @@ will be transformed. Such as `{center:NUM} TEXT {/center}` would transform
 conjunction with the text size.
 
 ```
+{left:NUM} {/left}    - left justify text by padding left with spaces
 {center:NUM} {/center}  - center text by padding left and right with spaces
-{ljust:NUM} {/ljust}    - left justify text by padding left with spaces
-{rjust:NUM} {/rjust}    - right justify text by padding right with spaces
+{right:NUM} {/right}    - right justify text by padding right with spaces
 {fill:NUM} {/fill}      - fill left side with zeros, preserve leading +- sign
 ```
 

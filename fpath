@@ -202,12 +202,12 @@ def supported_fmt_commands() -> dict[str, str]:
         "qq": 'literal double quote "',
         "STYLE": "name of the style like 'green' or 'bold'",
         "center:num": "center text by padding with NUM * space",
-        "ljust:num": "left justify text by padding with NUM * space",
-        "rjust:num": "right justify text by padding with NUM * space",
+        "left:num": "left justify text by padding with NUM * space",
+        "right:num": "right justify text by padding with NUM * space",
         "fill:num": "left fill with '0', leading +- sign is preserved",
         "/center": "end marker for center",
-        "/ljust": "end marker for ljust",
-        "/rjust": "end marker for rjust",
+        "/left": "end marker for left",
+        "/right": "end marker for right",
         "/fill": "end marker for fill",
         "origin": "original input data before processing",
         "list": "path broken up into individual parts",
@@ -476,10 +476,10 @@ class App:
 
         # {N:N} examples: {-1:} {2:4}
         re_slice = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
-        # {rjust:N}{/rjust}
-        re_rjust = re_compile(r"{rjust:([0-9]+?)}(.*?){/rjust}")
-        # {ljust:N}{/ljust}
-        re_ljust = re_compile(r"{ljust:([0-9]+?)}(.*?){/ljust}")
+        # {right:N}{/right}
+        re_right = re_compile(r"{right:([0-9]+?)}(.*?){/right}")
+        # {left:N}{/left}
+        re_left = re_compile(r"{left:([0-9]+?)}(.*?){/left}")
         # {center:N}{/center}
         re_center = re_compile(r"{center:([0-9]+?)}(.*?){/center}")
         # {fill:N}{/fill}
@@ -806,22 +806,22 @@ class App:
                         else:
                             fmt = fmt.replace(iseq, escape_and_quote(parts[i], False))
 
-            if "{rjust:" in fmt:
-                for m in re_rjust.findall(fmt):
+            if "{right:" in fmt:
+                for m in re_right.findall(fmt):
                     count = m[0]
                     content = m[1]
                     fmt = fmt.replace(
-                        "{rjust:" + count + "}" + content + "{/rjust}",
+                        "{right:" + count + "}" + content + "{/right}",
                         content.rjust(int(count), " "),
                         1,
                     )
 
-            if "{ljust:" in fmt:
-                for m in re_ljust.findall(fmt):
+            if "{left:" in fmt:
+                for m in re_left.findall(fmt):
                     count = m[0]
                     content = m[1]
                     fmt = fmt.replace(
-                        "{ljust:" + count + "}" + content + "{/ljust}",
+                        "{left:" + count + "}" + content + "{/left}",
                         content.ljust(int(count), " "),
                         1,
                     )
@@ -979,8 +979,8 @@ path until last element. Values higher than 9 are also allowed with slices.
 
 Fill type of commands have a start and end marker, and a number to define how
 long the marked area should be. {center:15}text{/center} would fill both sides
-with space until the area is 15 characters long. Similararly {ljust:num} and
-{rjust:num} work for left and right side respectively. There is also
+with space until the area is 15 characters long. Similararly {left:num} and
+{right:num} work for left and right side respectively. There is also
 {fill:num}, which will just fill the left side with '0', and respect any +-
 prefix sign. BTW, same kind of fill command should not be nested. 
 
