@@ -19,7 +19,7 @@ class fmtPath:
 
     def __init__(
         self,
-        path: str,
+        input_path: str,
         absolute: bool,
         resolve: bool,
         base: Path | None,
@@ -27,13 +27,13 @@ class fmtPath:
         quotes: str,
         leading_dot: bool,
     ) -> None:
-        self.origin = path
+        self.origin = input_path
         # work_path does not contain all configurations and is not intended for
         # end user. Use path_with_lazy() to calculate final state with all lazy
         # options incorporated dynamically at request time. That's because the
         # final path can contain the tilde in example, which is incompatible
         # with some operations.
-        self.work_path = Path(unquote(path)).expanduser()
+        self.work_path = Path(unquote(input_path)).expanduser()
 
         if base is not None and not self.work_path.is_absolute():
             self.work_path = base.expanduser() / self.work_path
