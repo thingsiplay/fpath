@@ -311,7 +311,7 @@ Saturday, May 04, 2024 04:40:03         playlists.zip
 ### Custom date format
 
 Time commands have a special variant allowing for custom formatting. Their
-`OPTIONS` are separated by double color, like this `{.mtime:OPTIONS}`. The
+`OPTIONS` are separated by double colon `:`, like this `{.mtime:OPTIONS}`. The
 `OPTIONS` are actually format codes interpreted by
 [strftime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes):
 
