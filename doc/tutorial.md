@@ -106,10 +106,10 @@ brackets `{` and `}` are not required.
 ```bash
 $ cd ~
 $ find Videos/* -maxdepth 0 | fpath -s red
-# see img/red.png
+# see ../img/red.png
 ```
 
-![screenshot: red style](img/red.png)
+![screenshot: red style](../img/red.png)
 
 Have in mind that styles from `-s` will partially overwrite and collide with
 styles specified in `-F` option, if not being carefully.
@@ -289,10 +289,10 @@ $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{.size}\t{name}'
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}'
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}\t{name}{default}'
 $ find ./* -maxdepth 0 | fpath -a -F'{.mode}\t{bold}{yellow}{.size}{/color}\t{name}{}'
-# see img/bold_yellow.png
+# see ../img/bold_yellow.png
 ```
 
-![screenshot: bold yellow style](img/bold_yellow.png)
+![screenshot: bold yellow style](../img/bold_yellow.png)
 
 ### Wanna a date?
 

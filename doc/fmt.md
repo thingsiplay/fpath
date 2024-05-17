@@ -172,8 +172,8 @@ will be transformed. Such as `{center:NUM} TEXT {/center}` would transform
 conjunction with the text size.
 
 ```
-{left:NUM} {/left}    - left justify text by padding left with spaces
 {center:NUM} {/center}  - center text by padding left and right with spaces
+{left:NUM} {/left}      - left justify text by padding left with spaces
 {right:NUM} {/right}    - right justify text by padding right with spaces
 {fill:NUM} {/fill}      - fill left side with zeros, preserve leading +- sign
 ```
