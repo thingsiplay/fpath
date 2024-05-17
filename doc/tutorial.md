@@ -385,3 +385,27 @@ However this approach running programs with `{!PROG` command is very slow. In
 fact, it will create a new shell process for every single line. So be careful.
 
 I hope this helps in understanding what this tool can do and if it is for you.
+
+## Bonus
+
+Here is a cool bonus usage: Use this tool to apply styles and effects to any
+text, not just to paths. Ignore the stdin data and give a single space as input
+path. Voila, a general purpose styling tool. :D Obviously this is not meant to
+be used like that, but for the fun sake, why not?
+
+Add a function to your .bashrc file:
+
+```bash
+ftext() {
+    local fmt
+    fmt="${*}"
+    fpath -zF "${fmt}"'{}' -- " "
+}
+```
+
+And use it in the terminal like this:
+
+```bash
+$ ftext {blue}{reverse}{blink} hello {/blink}{/reverse} world
+hello world
+```
