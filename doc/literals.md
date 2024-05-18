@@ -21,6 +21,8 @@ fpath -F '\n'
 "\\": literal single slash "\"
 "\{": literal "{"
 "\}": literal "}"
+"\q": literal single quote '
+"\Q": literal double quote "
 "\n": newline
 "\t": tab
 "\r": carriage return

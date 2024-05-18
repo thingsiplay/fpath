@@ -198,8 +198,6 @@ def terminal_style_codes_table(
 
 def supported_fmt_commands() -> dict[str, str]:
     return {
-        "q": "literal single quote '",
-        "Q": 'literal double quote "',
         "STYLE": "name of the style like 'green' or 'bold'",
         "center:num": "center text by padding with NUM * space",
         "left:num": "left justify text by padding with NUM * space",
@@ -292,6 +290,8 @@ def unescape_backslash_chars(source: str):
         source = source.replace(r"\b", "\b")
         source = source.replace(r"\f", "\f")
         source = source.replace(r"\s", "\xa0")
+        source = source.replace(r"\q", "'")
+        source = source.replace(r"\Q", '"')
     return source
 
 
@@ -546,16 +546,14 @@ class App:
             fmt = fmt.replace(r"\{", "\x02")
             fmt = fmt.replace(r"\}", "\x03")
             fmt = fmt.replace(r"\s", "\xa0")
+            fmt = fmt.replace(r"\q", "'")
+            fmt = fmt.replace(r"\Q", '"')
 
             path = entry.path
             parts = path.parts
             posix = path.as_posix()
             is_absolute = path.is_absolute()
 
-            if "{q}" in fmt:
-                fmt = fmt.replace("{q}", "'")
-            if "{Q}" in fmt:
-                fmt = fmt.replace("{Q}", '"')
             if "{i}" in fmt:
                 fmt = fmt.replace("{i}", "{index}")
             if "{index}" in fmt:
@@ -1043,6 +1041,8 @@ meaning:
     "\\" to literal single slash "\"
     "\{" to literal "{"
     "\}" to literal "}"
+    "\q" to literal single quote '
+    "\Q" to literal double quote "
     "\n" to newline
     "\t" to tab
     "\r" to carriage return
