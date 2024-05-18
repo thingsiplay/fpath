@@ -199,7 +199,7 @@ def terminal_style_codes_table(
 def supported_fmt_commands() -> dict[str, str]:
     return {
         "q": "literal single quote '",
-        "qq": 'literal double quote "',
+        "Q": 'literal double quote "',
         "STYLE": "name of the style like 'green' or 'bold'",
         "center:num": "center text by padding with NUM * space",
         "left:num": "left justify text by padding with NUM * space",
@@ -552,8 +552,8 @@ class App:
 
             if "{q}" in fmt:
                 fmt = fmt.replace("{q}", "'")
-            if "{qq}" in fmt:
-                fmt = fmt.replace("{qq}", '"')
+            if "{Q}" in fmt:
+                fmt = fmt.replace("{Q}", '"')
             if "{i}" in fmt:
                 fmt = fmt.replace("{i}", "{index}")
             if "{index}" in fmt:
@@ -1225,7 +1225,7 @@ def parse_arguments() -> ArgumentNamespace:
     )
 
     _ = quotes_group.add_argument(
-        "-qq",
+        "-Q",
         "--double-quotes",
         default=False,
         action="store_true",

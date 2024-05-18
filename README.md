@@ -44,7 +44,7 @@ back to stdout. Without any options, following operations are done
 automatically:
 
 - remove surrounding quotes `''` and double quotes `""` (see global option `-q`
-  and `-qq`)
+  and `-Q`)
 - remove leading `./` for relative paths (see global option `-d`)
 - remove trailing `/`
 - expand leading `~` to users home directory path (see global option `-t`)
