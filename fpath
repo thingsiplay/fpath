@@ -406,17 +406,29 @@ class App:
             for p in input_paths
         ]
 
-        self.include = args.include
-        if args.include:
-            self.paths = [p for p in self.paths if self.glob_include(p.path)]
-        else:
-            self.include = []
+        if args.include_ignore_case:
+            self.paths = [
+                p
+                for p in self.paths
+                if self.glob_include(p.path, args.include_ignore_case, False)
+            ]
 
-        self.exclude = args.exclude
+        if args.exclude_ignore_case:
+            self.paths = [
+                p
+                for p in self.paths
+                if self.glob_exclude(p.path, args.exclude_ignore_case, False)
+            ]
+
+        if args.include:
+            self.paths = [
+                p for p in self.paths if self.glob_include(p.path, args.include, True)
+            ]
+
         if args.exclude:
-            self.paths = [p for p in self.paths if self.glob_exclude(p.path)]
-        else:
-            self.exclude = []
+            self.paths = [
+                p for p in self.paths if self.glob_exclude(p.path, args.exclude, True)
+            ]
 
         if args.existing:
             self.paths = [p for p in self.paths if p.exists]
@@ -440,15 +452,15 @@ class App:
             else:
                 yield str(path) + self.lineend
 
-    def glob_include(self, path: Path):
-        for pattern in self.include:
-            if not path.match(pattern):
+    def glob_include(self, path: Path, include, case_sensitive):
+        for pattern in include:
+            if not path.match(pattern, case_sensitive=case_sensitive):
                 return False
         return True
 
-    def glob_exclude(self, path: Path) -> bool:
-        for pattern in self.exclude:
-            if path.match(pattern):
+    def glob_exclude(self, path: Path, exclude, case_sensitive) -> bool:
+        for pattern in exclude:
+            if path.match(pattern, case_sensitive=case_sensitive):
                 return False
         return True
 
@@ -1255,22 +1267,42 @@ def parse_arguments() -> ArgumentNamespace:
 
     _ = parser.add_argument(
         "-i",
+        "--include-ignore-case",
+        metavar="GLOB",
+        default=[],
+        nargs="*",
+        action="extend",
+        help="case-insensitive wildcard pattern, process matching names only",
+    )
+
+    _ = parser.add_argument(
+        "-I",
         "--include",
         metavar="GLOB",
         default=[],
         nargs="*",
         action="extend",
-        help="case-sensitive wildcard pattern, process matching names only",
+        help="same as option -i, but case sensitive",
     )
 
     _ = parser.add_argument(
         "-x",
+        "--exclude-ignore-case",
+        metavar="GLOB",
+        default=[],
+        nargs="*",
+        action="extend",
+        help="case-insensitive wildcard pattern, exclude matching names",
+    )
+
+    _ = parser.add_argument(
+        "-X",
         "--exclude",
         metavar="GLOB",
         default=[],
         nargs="*",
         action="extend",
-        help="case-sensitive wildcard pattern, exclude matching names",
+        help="same as option -x, but case sensitive",
     )
 
     _ = parser.add_argument(
