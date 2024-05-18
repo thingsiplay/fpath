@@ -17,9 +17,9 @@ fpath -F {FMT}
 ## Arguments
 
 A double colon `:` in the command name specifies the following part to be
-arguments to the command. `{.isdir:TEXT}` would have the command name
-`{.isdir}` and the arguments to it `TEXT` . It depends on the command how to
-interpret the arguments.
+arguments to the command. `{.isdir:TEXT}` will set the command name to `.isdir`
+and it's argument to `TEXT` . It depends on the command how to interpret the
+arguments.
 
 Example:
 
@@ -93,9 +93,9 @@ fpath -F '{isnotvalid:<file not found>}'
 ## File type information
 
 The Linux command `file` is executed in a sub shell to retrieve information
-about the files on the file system. This command is only run once for all files
-in process, and therefore is as fast as it can get; but still considerably
-slower than other commands.
+about the files on the file system. This command collects the paths and runs a
+single process once with all files together in one go. Therefore this is as
+fast as it can get; but still considerably slower than other commands.
 
 NOTE: Known limitation with the `{center}`, `{right}`, `{left}` and `{fill}`
 commands, which do not affect these commands. That's because this `file`
@@ -151,7 +151,7 @@ NOTE: The `OPTIONS` in `{.atime:OPTIONS}` are codes in a specific format:
 {.isreg:TEXT}       - place any TEXT, if its an existing regular file
 {.islink:TEXT}      - place any TEXT, if its an existing symbolic link
 
-{.size}             - auto formatted file size with a unit of 1 rounding digit
+{.size}             - file size with auto detect size and unit type, 1 rounding digit
 {.b}                - file size in bytes
 {.kb}               - file size in kilobytes, 2 rounding digits
 {.mb}               - file size in megabytes, 2 rounding digits
@@ -219,9 +219,9 @@ enclosed in quotes. Generally multiple layers of quoting can be challenging, so
 use this command only when really needed.
 
 IMPORTANT: Unlike the `filter` command, this command will run the program in a
-sub shell, for every line at least once! That means this can slow down the
-execution of the script considerably. Not recommended for use with a huge
-number of files. Normally this command shouldn't be needed for most cases.
+sub shell, for every path and line! This means it will slow down the execution
+of the script considerably. Not recommended for use with a huge number of
+files. Normally this command shouldn't be needed for most cases.
 
 ```
 {!PROG:ARGS} {/!}

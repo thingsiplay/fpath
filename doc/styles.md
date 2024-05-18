@@ -17,8 +17,8 @@ fpath -F {STYLE}
 
 ## globals
 
-These will reset any custom effects and of colors for following text. Usually
-it is a good advice to reset at the line end, so the next line of output will
+These will reset any custom effects and colors for following text. Usually it
+is a good advice to reset at the line end, so the next line of output will
 start off fresh.
 
 ```

@@ -277,7 +277,7 @@ def supported_fmt_commands() -> dict[str, str]:
         ".lmtime:args": "same as {.mtime:args}, but do not follow links",
         ".lctime:args": "same as {.ctime:args}, but do not follow links",
         "!prog:args": "run any program to replace DATA (very, VERY slow)",
-        "/!": "end marker for !",
+        "/!": "end marker for {!prog:args}",
     }
 
 
