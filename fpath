@@ -1259,6 +1259,7 @@ def parse_arguments() -> ArgumentNamespace:
         metavar="GLOB",
         default=[],
         nargs="*",
+        action="extend",
         help="case-sensitive wildcard pattern, process matching names only",
     )
 
@@ -1268,6 +1269,7 @@ def parse_arguments() -> ArgumentNamespace:
         metavar="GLOB",
         default=[],
         nargs="*",
+        action="extend",
         help="case-sensitive wildcard pattern, exclude matching names",
     )
 
