@@ -291,6 +291,7 @@ def unescape_backslash_chars(source: str):
         source = source.replace(r"\r", "\r")
         source = source.replace(r"\b", "\b")
         source = source.replace(r"\f", "\f")
+        source = source.replace(r"\s", "\xa0")
     return source
 
 
@@ -544,6 +545,7 @@ class App:
             fmt = fmt.replace(r"\0", "\x00")
             fmt = fmt.replace(r"\{", "\x02")
             fmt = fmt.replace(r"\}", "\x03")
+            fmt = fmt.replace(r"\s", "\xa0")
 
             path = entry.path
             parts = path.parts
@@ -1044,8 +1046,9 @@ meaning:
     "\n" to newline
     "\t" to tab
     "\r" to carriage return
-    "\b" to backspace
     "\f" to form feed
+    "\b" to backspace
+    "\s" to non breakable space
 
 """
             )

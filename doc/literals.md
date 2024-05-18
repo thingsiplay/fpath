@@ -23,6 +23,10 @@ fpath -F '\n'
 "\}": literal "}"
 "\n": newline
 "\t": tab
+"\r": carriage return
+"\f": form feed
+"\b": backspace
+"\s": non breakable space
 ```
 
 Example:
