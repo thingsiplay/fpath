@@ -232,6 +232,8 @@ def supported_fmt_commands() -> dict[str, str]:
         "group": "name of group from file owner",
         "isvalid": "1=if existing on disk, 0=if not",
         "isnotvalid": "1=if does not existing on disk, 0=if it does",
+        "isvalid:text": "any text if path points to exists, empty otherwise",
+        "isnotvalid:text": "any text if path does not exist, empty otherwise",
         ".stat": "unprocessed file stat results",
         ".mode": "file permissions",
         ".perm": "same as {.mode}",
@@ -487,6 +489,10 @@ class App:
         re_fill = re_compile(r"{fill:([0-9]+?)}(.*?){/fill}")
         # {.ANY} examples: {.stats} {.isdir}
         re_stats = re_compile(r"{\.[^{}]+?}")
+        # {isvalid:ARGS}
+        re_isvalid = re_compile(r"{isvalid:([^{}]+?)}")
+        # {isnotvalid:ARGS}
+        re_isnotvalid = re_compile(r"{isnotvalid:([^{}]+?)}")
         # {.lANY} examples: {.lstats} {.lisdir}
         re_lstats = re_compile(r"{\.l[^{}]+?}")
         # {.atime:ARGS}
@@ -612,11 +618,27 @@ class App:
                 except (KeyError, FileNotFoundError):
                     fmt = fmt.replace("{group}", "")
 
-            if "{isvalid}" in fmt:
-                fmt = fmt.replace("{isvalid}", str(int(entry.exists)))
+            if "{isv" in fmt:
+                if "{isvalid}" in fmt:
+                    fmt = fmt.replace("{isvalid}", str(int(entry.exists)))
+                elif "{isvalid:" in fmt:
+                    for arg in re_isvalid.findall(fmt):
+                        if entry.exists:
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{isvalid:" + arg + "}", repl)
 
-            if "{isnotvalid}" in fmt:
-                fmt = fmt.replace("{isnotvalid}", str(int(not entry.exists)))
+            if "{isn" in fmt:
+                if "{isnotvalid}" in fmt:
+                    fmt = fmt.replace("{isnotvalid}", str(int(not entry.exists)))
+                elif "{isnotvalid:" in fmt:
+                    for arg in re_isnotvalid.findall(fmt):
+                        if not entry.exists:
+                            repl = arg
+                        else:
+                            repl = ""
+                        fmt = fmt.replace("{isnotvalid:" + arg + "}", repl)
 
             # lstats
             # NOTE: Make sure to be in sync with stats.

@@ -73,6 +73,23 @@ fpath -F {3:5}
 fpath -F {-2:}
 ```
 
+## File existence
+
+Simple check if a path points to an existing or non existing file or directory
+on the file system. If condition is met, then add the custom `TEXT` part in
+place.
+
+```
+{isvalid:TEXT}      - place any TEXT, if path exists
+{isnotvalid:TEXT}   - place any TEXT, if path does not exist
+```
+
+Example:
+
+```bash
+fpath -F '{isnotvalid:<file not found>}'
+```
+
 ## File type information
 
 The Linux command `file` is executed in a sub shell to retrieve information
