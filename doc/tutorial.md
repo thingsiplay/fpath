@@ -360,7 +360,7 @@ the program. And it's output will replace `DATA`:
 
 ```bash
 $ cd ~/Desktop/My" "Files/
-$ time find ./* -maxdepth 0 | fpath -F '{!grep:-i -E "^\w+$"}{name}{/!}'
+$ find ./* -maxdepth 0 | fpath -F '{!grep:-i -E "^\w+$"}{name}{/!}'
 
 emojicherrypick
 
@@ -374,7 +374,7 @@ the program:
 
 ```bash
 $ cd ~/Desktop/My" "Files/
-$ time find ./* -maxdepth 0 | fpath -F '{!md5sum:"{path}"}{/!}'
+$ find ./* -maxdepth 0 | fpath -F '{!md5sum:"{path}"}{/!}'
 6079b16fceede79ed1c9b797ba07ad37  Arcade - A-Z Uncommon Arcade Games.lpl
 
 8bf704f44b5231caee4a26d4f4a61645  new.png
