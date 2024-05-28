@@ -1145,7 +1145,7 @@ def parse_arguments() -> ArgumentNamespace:
         "--explain",
         metavar="SUB",
         choices=choices,
-        help=f"Subjects: {", ".join(choices)}",
+        help=f"Subjects: {', '.join(choices)}",
     )
 
     _ = parser.add_argument(
