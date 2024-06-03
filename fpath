@@ -714,7 +714,7 @@ class App:
                 if "{.lctime}" in fmt:
                     fmt = fmt.replace("{.lctime}", time(lst.st_ctime))
                 if "{.l" in fmt:
-                    if "ltime:" in fmt:
+                    if "time:" in fmt:
                         fmt = self.time_custom_arg(lst.st_atime, "la", re_latime, fmt)
                         fmt = self.time_custom_arg(lst.st_mtime, "lm", re_lmtime, fmt)
                         fmt = self.time_custom_arg(lst.st_ctime, "lc", re_lctime, fmt)
