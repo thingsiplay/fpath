@@ -46,6 +46,7 @@ class fmtPath:
         self.lazy_quotes: str = quotes
         self.with_leading_dot: bool = leading_dot
         self.exists_cache: bool | None = None
+        self.symlink_cache: Path | None = None
         return
 
     def __str__(self) -> str:
@@ -78,8 +79,20 @@ class fmtPath:
     @property
     def exists(self) -> bool:
         if self.exists_cache is None:
-            self.exists_cache = self.work_path.exists()
+            if self.work_path.is_symlink():
+                self.exists_cache = self.work_path.exists(follow_symlinks=True)
+            else:
+                self.exists_cache = self.work_path.exists(follow_symlinks=False)
         return self.exists_cache
+
+    @property
+    def symlink_path(self) -> Path:
+        if self.symlink_cache is None:
+            try:
+                self.symlink_cache = self.work_path.readlink()
+            except OSError:
+                self.symlink_cache = self.work_path
+        return self.symlink_cache
 
 
 def escape_slash(source: str, sep: str):
@@ -207,75 +220,48 @@ def supported_fmt_commands() -> dict[str, str]:
         "/left": "end marker for left",
         "/right": "end marker for right",
         "/fill": "end marker for fill",
-        "origin": "original input data before processing",
-        "list": "path broken up into individual parts",
-        "0..9": "direct access each part with index, from {0} to {9}",
-        "-start:end": "slice from any to any index, including negative numbers",
         "index": "current number of path in process",
         "i": "same as {index}",
         "total": "total count of paths to process",
-        "path": "path as posix",
-        "root": "drive and root if any",
-        "uri": "path as file URI",
-        "dir": "parent directory path",
-        "dirname": "parent directory name without path",
-        "name": "file name without directory",
-        "stem": "file name without directory and extension",
-        "ext": "single file extension after '.'",
-        "exts": "all file extensions if more than one '.'",
-        "file": "long type information based on file content (slow)",
-        "type": "short type information based on file content (slow)",
-        "mime": "short mime information based on file content (slow)",
-        "owner": "name of owner from file",
-        "group": "name of group from file owner",
-        "isvalid": "1=if existing on disk, 0=if not",
-        "isnotvalid": "1=if does not existing on disk, 0=if it does",
-        "isvalid:text": "any text if path points to exists, empty otherwise",
-        "isnotvalid:text": "any text if path does not exist, empty otherwise",
-        ".stat": "unprocessed file stat results",
-        ".mode": "file permissions",
-        ".perm": "same as {.mode}",
-        ".isdir": "add a true path separator character if its a directory",
-        ".isdir:text": "any text if existing directory, empty otherwise",
-        ".isreg:text": "any text if existing regular file, empty otherwise",
-        ".islink:text": "any text if existing symbolic link, empty otherwise",
-        ".dev": "device id where this file resides",
-        ".uid": "user id number from file owner",
-        ".gid": "group id number from file owner",
-        ".nlink": "number of hard links on filesystem",
-        ".size": "auto format file size with unit, 1 rounding digit",
-        ".b": "file size in bytes",
-        ".kb": "file size in kilobytes, 2 rounding digits",
-        ".mb": "file size in megabytes, 2 rounding digits",
-        ".gb": "file size in gigabytes, 2 rounding digits",
-        ".atime": "last access timestamp in readable format",
-        ".mtime": "last modified timestamp in readable format",
-        ".ctime": "last changed timestamp in readable format",
-        ".atime:args": "custom strftime format codes",
-        ".mtime:args": "custom strftime format codes",
-        ".ctime:args": "custom strftime format codes",
-        ".lstat": "same as {.stat}, but do not follow links",
-        ".lmode": "same as {.mode}, but do not follow links",
-        ".lperm": "same as {.perm}, but do not follow links",
-        ".lisdir": "same as {.isdir}, but do not follow links",
-        ".lisdir:text": "same as {.isdir:text}, but do not follow links",
-        ".lisreg:text": "same as {.isreg:text}, but do not follow links",
-        ".lislink:text": "same as {.islink:text}, but do not follow links",
-        ".ldev": "same as {.dev}, but do not follow links",
-        ".luid": "same as {.uid}, but do not follow links",
-        ".lgid": "same as {.gid}, but do not follow links",
-        ".lnlink": "same as {.nlink}, but do not follow links",
-        ".lsize": "same as {.size}, but do not follow links",
-        ".lb": "same as {.b}, but do not follow links",
-        ".lkb": "same as {.kb}, but do not follow links",
-        ".lmb": "same as {.mb}, but do not follow links",
-        ".lgb": "same as {.gb}, but do not follow links",
-        ".latime": "same as {.atime}, but do not follow links",
-        ".lmtime": "same as {.mtime}, but do not follow links",
-        ".lctime": "same as {.ctime}, but do not follow links",
-        ".latime:args": "same as {.atime:args}, but do not follow links",
-        ".lmtime:args": "same as {.mtime:args}, but do not follow links",
-        ".lctime:args": "same as {.ctime:args}, but do not follow links",
+        "origin": "original input data before processing",
+        "list": "path broken up into individual parts, also {rlist}",
+        "-start:end": "slice a part from path, also {rstart:end}",
+        "path": "path as posix, also {rpath}",
+        "root": "drive and root if any, also {rroot}",
+        "uri": "path as file URI, also {ruri}",
+        "dir": "parent directory path, also {rdir}",
+        "dirname": "parent directory name without path, also {rdirname}",
+        "name": "file name without directory, also {rname}",
+        "stem": "file name without directory and extension, also {rstem}",
+        "ext": "single file extension after '.', also {rext}",
+        "exts": "all file extensions if more than one '.', also {rexts}",
+        "file": "long type information based on file content (slow), also {rfile}",
+        "type": "short type information based on file content (slow), also {rtype}",
+        "mime": "short mime information based on file content (slow), also {rmime}",
+        "owner": "name of owner from file, also {rowner}",
+        "group": "name of group from file owner, also {rgroup}",
+        ".stat": "unprocessed file stat results, also {.lstat}",
+        ".mode": "file permissions, also {.lmode}",
+        ".perm": "same as {.mode}, also {.lperm}",
+        ".isdir": "add a true path separator character if its a directory, also {.lisdir}",
+        ".isdir:text": "any text if existing directory, empty otherwise, also {.lisdir:text}",
+        ".isreg:text": "any text if existing regular file, empty otherwise, also {.lisreg:text}",
+        ".islink:text": "any text if existing symbolic link, empty otherwise, also {.lislink:text}",
+        ".dev": "device id where this file resides, also {.ldev}",
+        ".uid": "user id number from file owner, also {.luid}",
+        ".gid": "group id number from file owner, also {.lgid}",
+        ".nlink": "number of hard links on filesystem, also {.lnlink}",
+        ".size": "auto format file size with unit, 1 rounding digit, also {.lsize}",
+        ".b": "file size in bytes, also {.lb}",
+        ".kb": "file size in kilobytes, 2 rounding digits, {also .lkb}",
+        ".mb": "file size in megabytes, 2 rounding digits, {also .lmb}",
+        ".gb": "file size in gigabytes, 2 rounding digits, {also .lgb}",
+        ".atime": "last access timestamp in readable format, {also .latime}",
+        ".mtime": "last modified timestamp in readable format, {also .lmtime}",
+        ".ctime": "last changed timestamp in readable format, {also .lctime}",
+        ".atime:args": "custom strftime format codes, {also .latime:args}",
+        ".mtime:args": "custom strftime format codes, {also .lmtime:args}",
+        ".ctime:args": "custom strftime format codes, {also .lctime:args}",
         "!prog:args": "run any program to replace DATA (very, VERY slow)",
         "/!": "end marker for {!prog:args}",
     }
@@ -314,7 +300,7 @@ def hash(source: str):
 
 # TODO: I'm not sure about correct types produced by hexdigest()
 def filetypes(source, hash_entries, arg: str | None = None):
-    all_paths = [p.path.as_posix() for p in hash_entries.values()]
+    all_paths = [p.as_posix() for p in hash_entries.values()]
     filetypes = dict(zip(hash_entries.keys(), file(all_paths, arg)))
 
     output = []
@@ -491,7 +477,7 @@ class App:
         # so they cannot interfere with paths.
 
         # {N:N} examples: {-1:} {2:4}
-        re_slice = re_compile(r"{(-?[0-9]+)?:(-?[0-9]+)?}")
+        re_slice = re_compile(r"{(r)?(-?[0-9]+)?:(-?[0-9]+)?}")
         # {right:N}{/right}
         re_right = re_compile(r"{right:([0-9]+?)}(.*?){/right}")
         # {left:N}{/left}
@@ -502,10 +488,6 @@ class App:
         re_fill = re_compile(r"{fill:([0-9]+?)}(.*?){/fill}")
         # {.ANY} examples: {.stats} {.isdir}
         re_stats = re_compile(r"{\.[^{}]+?}")
-        # {isvalid:ARGS}
-        re_isvalid = re_compile(r"{isvalid:([^{}]+?)}")
-        # {isnotvalid:ARGS}
-        re_isnotvalid = re_compile(r"{isnotvalid:([^{}]+?)}")
         # {.lANY} examples: {.lstats} {.lisdir}
         re_lstats = re_compile(r"{\.l[^{}]+?}")
         # {.atime:ARGS}
@@ -549,6 +531,9 @@ class App:
         hash_file_entries = {}
         hash_mime_entries = {}
         hash_type_entries = {}
+        hash_rfile_entries = {}
+        hash_rmime_entries = {}
+        hash_rtype_entries = {}
         total_entries = len(self.paths)
         for index, entry in enumerate(self.paths):
             fmt: str = self.format
@@ -561,10 +546,9 @@ class App:
             fmt = fmt.replace(r"\q", "'")
             fmt = fmt.replace(r"\Q", '"')
 
-            path = entry.path
-            parts = path.parts
-            posix = path.as_posix()
-            is_absolute = path.is_absolute()
+            rposix = entry.symlink_path.as_posix()
+            posix = entry.path.as_posix()
+            is_absolute = entry.path.is_absolute()
 
             if "{i}" in fmt:
                 fmt = fmt.replace("{i}", "{index}")
@@ -574,90 +558,143 @@ class App:
                 fmt = fmt.replace("{total}", str(total_entries))
             if "{origin}" in fmt:
                 fmt = fmt.replace("{origin}", escape(entry.origin))
+            if "{rlist}" in fmt:
+                fmt = fmt.replace(
+                    "{rlist}", escape_and_quote(str(entry.symlink_path.parts), False)
+                )
             if "{list}" in fmt:
-                fmt = fmt.replace("{list}", escape_and_quote(str(parts), False))
+                fmt = fmt.replace(
+                    "{list}", escape_and_quote(str(entry.path.parts), False)
+                )
+            if "{rpath}" in fmt:
+                fmt = fmt.replace(
+                    "{rpath}",
+                    escape_and_quote(rposix, is_absolute),
+                )
             if "{path}" in fmt:
                 fmt = fmt.replace("{path}", escape_and_quote(posix, is_absolute))
+            if "{rroot}" in fmt:
+                fmt = fmt.replace(
+                    "{rroot}", escape_and_quote(entry.symlink_path.anchor, False)
+                )
             if "{root}" in fmt:
-                fmt = fmt.replace("{root}", escape_and_quote(path.anchor, False))
+                fmt = fmt.replace("{root}", escape_and_quote(entry.path.anchor, False))
+            if "{ruri}" in fmt:
+                fmt = fmt.replace(
+                    "{ruri}",
+                    escape_and_quote(entry.symlink_path.absolute().as_uri(), False),
+                )
             if "{uri}" in fmt:
                 fmt = fmt.replace(
-                    "{uri}", escape_and_quote(path.absolute().as_uri(), False)
+                    "{uri}", escape_and_quote(entry.path.absolute().as_uri(), False)
+                )
+            if "{rdir}" in fmt:
+                fmt = fmt.replace(
+                    "{rdir}",
+                    escape_and_quote(entry.symlink_path.parent.as_posix(), is_absolute),
                 )
             if "{dir}" in fmt:
                 fmt = fmt.replace(
-                    "{dir}", escape_and_quote(path.parent.as_posix(), is_absolute)
+                    "{dir}",
+                    escape_and_quote(entry.path.parent.as_posix(), is_absolute),
+                )
+            if "{rdirname}" in fmt:
+                fmt = fmt.replace(
+                    "{rdirname}",
+                    escape_and_quote(entry.symlink_path.parent.name, False),
                 )
             if "{dirname}" in fmt:
                 fmt = fmt.replace(
-                    "{dirname}", escape_and_quote(path.parent.name, False)
+                    "{dirname}", escape_and_quote(entry.path.parent.name, False)
+                )
+            if "{rname}" in fmt:
+                fmt = fmt.replace(
+                    "{rname}", escape_and_quote(entry.symlink_path.name, False)
                 )
             if "{name}" in fmt:
-                fmt = fmt.replace("{name}", escape_and_quote(path.name, False))
+                fmt = fmt.replace("{name}", escape_and_quote(entry.path.name, False))
+            if "{rstem}" in fmt:
+                fmt = fmt.replace(
+                    "{rstem}", escape_and_quote(entry.symlink_path.stem, False)
+                )
             if "{stem}" in fmt:
-                fmt = fmt.replace("{stem}", escape_and_quote(path.stem, False))
+                fmt = fmt.replace("{stem}", escape_and_quote(entry.path.stem, False))
+            if "{rext}" in fmt:
+                fmt = fmt.replace(
+                    "{rext}", escape_and_quote(entry.symlink_path.suffix, False)
+                )
             if "{ext}" in fmt:
-                fmt = fmt.replace("{ext}", escape_and_quote(path.suffix, False))
+                fmt = fmt.replace("{ext}", escape_and_quote(entry.path.suffix, False))
+            if "{rexts}" in fmt:
+                fmt = fmt.replace(
+                    "{rexts}",
+                    escape_and_quote("".join(entry.symlink_path.suffixes), False),
+                )
             if "{exts}" in fmt:
                 fmt = fmt.replace(
-                    "{exts}", escape_and_quote("".join(path.suffixes), False)
+                    "{exts}", escape_and_quote("".join(entry.path.suffixes), False)
                 )
 
-            if "{file}" in fmt:
-                h = hash(posix + f"{index}file")
-                hash_file_entries[h] = entry
-                fmt = fmt.replace("{file}", h)
+            if "file}" in fmt:
+                if "{rfile}" in fmt:
+                    h = hash(rposix + f"{index}rfile")
+                    hash_rfile_entries[h] = entry.symlink_path
+                    fmt = fmt.replace("{rfile}", h)
+                if "{file}" in fmt:
+                    h = hash(posix + f"{index}file")
+                    hash_file_entries[h] = entry.path
+                    fmt = fmt.replace("{file}", h)
 
-            if "{type}" in fmt:
-                h = hash(posix + f"{index}type")
-                hash_type_entries[h] = entry
-                fmt = fmt.replace("{type}", h)
+            if "type}" in fmt:
+                if "{rtype}" in fmt:
+                    h = hash(rposix + f"{index}rtype")
+                    hash_rtype_entries[h] = entry.symlink_path
+                    fmt = fmt.replace("{rtype}", h)
+                if "{type}" in fmt:
+                    h = hash(posix + f"{index}type")
+                    hash_type_entries[h] = entry.path
+                    fmt = fmt.replace("{type}", h)
 
-            if "{mime}" in fmt:
-                h = hash(posix + f"{index}mime")
-                hash_mime_entries[h] = entry
-                fmt = fmt.replace("{mime}", h)
+            if "mime}" in fmt:
+                if "{rmime}" in fmt:
+                    h = hash(rposix + f"{index}rmime")
+                    hash_rmime_entries[h] = entry.symlink_path
+                    fmt = fmt.replace("{rmime}", h)
+                if "{mime}" in fmt:
+                    h = hash(posix + f"{index}mime")
+                    hash_mime_entries[h] = entry.path
+                    fmt = fmt.replace("{mime}", h)
 
-            if "{owner}" in fmt:
-                try:
-                    fmt = fmt.replace("{owner}", path.owner())
-                except (KeyError, FileNotFoundError):
-                    fmt = fmt.replace("{owner}", "")
+            if "owner}" in fmt:
+                if "{rowner}" in fmt:
+                    try:
+                        fmt = fmt.replace("{rowner}", entry.symlink_path.owner())
+                    except (KeyError, FileNotFoundError):
+                        fmt = fmt.replace("{rowner}", "")
+                if "{owner}" in fmt:
+                    try:
+                        fmt = fmt.replace("{owner}", entry.path.owner())
+                    except (KeyError, FileNotFoundError):
+                        fmt = fmt.replace("{owner}", "")
 
-            if "{group}" in fmt:
-                try:
-                    fmt = fmt.replace("{group}", path.group())
-                except (KeyError, FileNotFoundError):
-                    fmt = fmt.replace("{group}", "")
-
-            if "{isv" in fmt:
-                if "{isvalid}" in fmt:
-                    fmt = fmt.replace("{isvalid}", str(int(entry.exists)))
-                elif "{isvalid:" in fmt:
-                    for arg in re_isvalid.findall(fmt):
-                        if entry.exists:
-                            repl = arg
-                        else:
-                            repl = ""
-                        fmt = fmt.replace("{isvalid:" + arg + "}", repl)
-
-            if "{isn" in fmt:
-                if "{isnotvalid}" in fmt:
-                    fmt = fmt.replace("{isnotvalid}", str(int(not entry.exists)))
-                elif "{isnotvalid:" in fmt:
-                    for arg in re_isnotvalid.findall(fmt):
-                        if not entry.exists:
-                            repl = arg
-                        else:
-                            repl = ""
-                        fmt = fmt.replace("{isnotvalid:" + arg + "}", repl)
+            if "group}" in fmt:
+                if "{rgroup}" in fmt:
+                    try:
+                        fmt = fmt.replace("{rgroup}", entry.symlink_path.group())
+                    except (KeyError, FileNotFoundError):
+                        fmt = fmt.replace("{rgroup}", "")
+                if "{group}" in fmt:
+                    try:
+                        fmt = fmt.replace("{group}", entry.path.group())
+                    except (KeyError, FileNotFoundError):
+                        fmt = fmt.replace("{group}", "")
 
             # lstats
             # NOTE: Make sure to be in sync with stats.
             # Also test for entry.exists directly, as this will change the state.
             if "{.l" in fmt and entry.exists:
                 # https://docs.python.org/3/library/os.html#os.stat_result
-                lst = path.expanduser().lstat()
+                lst = entry.path.expanduser().lstat()
                 if "{.lst" in fmt:
                     fmt = fmt.replace(
                         "{.lstat}", str(lst).removeprefix("os.stat_result")
@@ -727,7 +764,7 @@ class App:
             # Also test for entry.exists directly, as this will change the state.
             if "{." in fmt and entry.exists:
                 # https://docs.python.org/3/library/os.html#os.stat_result
-                st = path.expanduser().stat()
+                st = entry.path.expanduser().stat()
                 if "{.st" in fmt:
                     fmt = fmt.replace("{.stat}", str(st).removeprefix("os.stat_result"))
                 if "{.pe" in fmt:
@@ -806,24 +843,34 @@ class App:
                 else:
                     match = None
                 if match:
+                    parts = entry.path.parts
+                    rparts = entry.symlink_path.parts
                     # slices: {2:-1}
                     for i in match:
 
-                        if i[0] == "":
+                        if i[1] == "":
                             start = None
                         else:
-                            start = int(i[0])
-                        if i[1] == "":
+                            start = int(i[1])
+                        if i[2] == "":
                             end = None
                         else:
-                            end = int(i[1])
-                        slice = parts[start:end]
+                            end = int(i[2])
 
-                        if i[0] == "":
-                            start = ""
+                        if i[0] == "r":
+                            slice = rparts[start:end]
+                        else:
+                            slice = parts[start:end]
+
                         if i[1] == "":
+                            start = ""
+                        if i[2] == "":
                             end = ""
-                        key = "{" + f"{start}:{end}" + "}"
+
+                        if i[0] == "r":
+                            key = "{r" + f"{start}:{end}" + "}"
+                        else:
+                            key = "{" + f"{start}:{end}" + "}"
 
                         fmt = fmt.replace(
                             key,
@@ -831,18 +878,6 @@ class App:
                                 "/".join(slice).replace("//", "/", 1), False
                             ),
                         )
-                else:
-                    # index: {0}, {1}, {2} ... {9}
-                    p_len = len(parts)
-                    max_fmt_num = 10
-                    for i in range(max_fmt_num):
-                        if i == max_fmt_num:
-                            break
-                        iseq = "{" + str(i) + "}"
-                        if i >= p_len:
-                            fmt = fmt.replace(iseq, escape_and_quote("", False))
-                        else:
-                            fmt = fmt.replace(iseq, escape_and_quote(parts[i], False))
 
             if "{right:" in fmt:
                 for m in re_right.findall(fmt):
@@ -916,6 +951,12 @@ class App:
             entries = filetypes(entries, hash_type_entries, "--mime-type")
         if hash_mime_entries:
             entries = filetypes(entries, hash_mime_entries, "--mime-encoding")
+        if hash_rfile_entries:
+            entries = filetypes(entries, hash_rfile_entries)
+        if hash_rtype_entries:
+            entries = filetypes(entries, hash_rtype_entries, "--mime-type")
+        if hash_rmime_entries:
+            entries = filetypes(entries, hash_rmime_entries, "--mime-encoding")
 
         return entries
 
@@ -957,6 +998,7 @@ class App:
 styles with -s option will overwrite color and style changes from -F.
 
     -s "red"
+
     -sblink
 
 There are a few shortcuts available, with same meaning as the normal style
@@ -974,6 +1016,7 @@ commands:
 -F supports styles too. More about this option with -H fmt.
 
     -F{red}
+
     -F"Hyper {blink}HYPER{/blink}{default}"
 """
             )
@@ -993,56 +1036,57 @@ commands:
             print(
                 r"""List of format commands
 
--F requires the names between in curly braces to be recognized. Also one should
-reset or default at the end of the command chain, otherwise it will spill over
-to the other lines. -F will stop printing paths by default and give full
-control with these control sequences.
+-F requires curly braces to recognize format commands. -F will stop printing
+paths by default and give full control of output. All style commands are also
+available. When using color or other styles, then make sure to close the tag,
+otherwise it will spill over to next line:
 
-    -F{name}
-    -F'{uri}\n\t{.size}\n\t{.atime}\n\t{.mode}\n'
-    -F'{byellow}{name}{/color}  in  {dim}{cyan}{dirname}{default}'
+    -F{name}={path}
 
-Very few commands even support arguments on their own for even more
-customization. Those have the format {command:arguments}. The time commands
-support custom formatting in form of {.atime:strftime} .
+    -F '{byellow}{name}{/color}'
 
-    -F'{.atime:%Y-%m-%d}'
+Resolve path to symbolic links target with the resolve variant, adding "r" in
+front of a path command:
 
-Slices are two numbers {2:3} to specify start and end index of a path. Negative
-numbers will count from end of path instead start, like {-1:} is the name of
-the file and {0:} starts from first element. An empty value means rest of the
-path until last element. Values higher than 9 are also allowed with slices.
+    -F{rname}={rpath}
 
-    -F'{3:-1}'
+All stat based commands starting with a dot "{." will automatically expand any
+symbolic link to its target. To get information about the link file itself, add
+an "l" after the dot:
 
-Fill type of commands have a start and end marker, and a number to define how
-long the marked area should be. {center:15}text{/center} would fill both sides
-with space until the area is 15 characters long. Similararly {left:num} and
-{right:num} work for left and right side respectively. There is also
-{fill:num}, which will just fill the left side with '0', and respect any +-
-prefix sign. BTW, same kind of fill command should not be nested. 
+    -F '{.size} - {.lsize}'
 
-    -F{fill:5}{/fill}{center:70}{.mode}{/center}
+Some commands accept arguments. The arguments are inside the curly braces,
+separated by double colon in the form "{command:arguments}":
 
-The stat based command starting with a dot {. will follow any symlink and
-report information on the target. Note that therefore {.islink} will report if
-the target of a symlink is a symlink! To get information about a link file
-itself, use those starting with {.l in name, such as {.lislink to report if the
-path pointing to the file itself is a symlink and not its target. Good example
-to test on is the file ~/.steampid .
+    -F '{.atime:%Y-%m-%d}'
 
-    -F'{.islink} != {.lislink}'
+    -F '{center:70} text {/center}'
 
-Run any program with the run command, to filter stdin data and output its
-stdout. Base structure of command is {!prog:args}DATA{/!}, where prog is the
-name of the program. args are arguments given over to the program and is
-optional. DATA, the area between start tag and its closing tag will be used as
-stdin stream to the calling program, and its stdout will replace DATA. However
-if DATA area is empty, then program runs without stdin stream, but its output
-will still be printed.
+Slices in form "{start:end}" are two numbers to output only part of a path.
+Start index begins count at 0 for element 1. End index starts counting at 1 for
+first element and should be higher than Start index. Negative numbers start
+counting backwards from last element. Empty values means rest of the path.
+
+    -F {1:2}
+
+    -F {-2:}
+
+Output result from any application with the run command. Base structure is
+"{!prog:args} DATA {/!}":
+
+    - "prog" is the name of the program
+    - "args" are optional arguments to the program
+    - "DATA" is optional text send to the programs stdin stream
+
+If DATA is given, then this will be used as stdin for the calling program, and
+is replaced by the stdout result. If no DATA is specified, then program runs
+without stdin stream. After execution of program its stdout will be printed.
 
     -F '{!grep:-i Car}{path}{/!}'
+
     -F '{!sed:"s/home/hell"}{path}{/!}'
+
     -F '{!md5sum:"{path}"}{/!}'
 
 All style commands are also available. List them with -H style.
@@ -1066,7 +1110,7 @@ meaning:
             )
         for key, value in supported_fmt_commands().items():
             if compact:
-                print(f"{key}:", value)
+                print(f"{key}:", value.replace("{", "").replace("}", ""))
             else:
                 print("{" + key + "}")
                 print(f"\t{value}\n")
