@@ -33,6 +33,8 @@ fpath -F '{.atime:OPTIONS}'
 
 File names and path related variables.
 
+The "r" variants will resolve any symbolic link to their target.
+
 ```
 {path}              - entire known path
 {uri}               - convert path to file URI
@@ -42,6 +44,11 @@ File names and path related variables.
 {stem}              - same as {name}, but without file extension
 {ext}               - file extension after last dot
 {exts}              - multiple file extensions, if there are multiple dots
+
+{rpath}
+{ruri}
+{rdir}
+...
 ```
 
 Example:
@@ -49,16 +56,15 @@ Example:
 ```bash
 fpath -F {path}
 
-fpath -F '{name} in {dirname}'
+fpath -F '{rname} in {rdirname}'
 ```
 
 ## File path parts by index
 
-Get portions of file names and directories by an index number. Either directly
-a single part of it, or by specifying a range from start to end point.
+Output only a specific part of the path by specifying start and end index. Each
+part delimited by "/" of the path is one individual element.
 
 ```
-{0} .. {9}          - direct access of a single element from a path
 {-START:END}        - slice from any to any index, including negative numbers,
                       empty value means the rest of the path
 ```
@@ -66,28 +72,9 @@ a single part of it, or by specifying a range from start to end point.
 Example:
 
 ```bash
-fpath -F {3}
-
 fpath -F {3:5}
 
 fpath -F {-2:}
-```
-
-## File existence
-
-Simple check if a path points to an existing or non existing file or directory
-on the file system. If condition is met, then add the custom `TEXT` part in
-place.
-
-```
-{isvalid:TEXT}      - place any TEXT, if path exists
-{isnotvalid:TEXT}   - place any TEXT, if path does not exist
-```
-
-Example:
-
-```bash
-fpath -F '{isnotvalid:<file not found>}'
 ```
 
 ## File type information
@@ -97,6 +84,8 @@ about the files on the file system. This command collects the paths and runs a
 single process once with all files together in one go. Therefore this is as
 fast as it can get; but still considerably slower than other commands.
 
+The "r" variants will resolve any symbolic link to their target.
+
 NOTE: Known limitation with the `{center}`, `{right}`, `{left}` and `{fill}`
 commands, which do not affect these commands. That's because this `file`
 process is run at last after the formatting.
@@ -105,6 +94,10 @@ process is run at last after the formatting.
 {file}              - long type information with description
 {type}              - short type name
 {mime}              - name of the associated mime type
+
+{rfile}
+{rtype}
+{rmime}
 ```
 
 Example:
@@ -117,9 +110,14 @@ fpath -F {type}
 
 Simply the user or group name who owns the file.
 
+The "r" variants will resolve any symbolic link to their target.
+
 ```
 {owner}             - name of user owning the file
 {group}             - name of group owning the file
+
+{rowner}
+{rgroup}
 ```
 
 Example:

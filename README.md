@@ -33,7 +33,7 @@ chmod +x fpath
 ```bash
 paths... | fpath [options] [--] [path...]
 
-\s -1 | fpath
+\ls -1 | fpath
 
 fpath *.txt
 ```
