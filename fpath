@@ -503,17 +503,17 @@ class App:
         # {.lctime:ARGS}
         re_lctime = re_compile(r"\.lctime:([-+ _/%,.:a-z-A-Z0-9]+?)?}")
         # {.isdir:ARGS}
-        re_isdir = re_compile(r"{\.isdir:([^{}]+?)}")
+        re_isdir = re_compile(r"{\.isdir:([^{}]*?)}")
         # {.isreg:ARGS}
-        re_isreg = re_compile(r"{\.isreg:([^{}]+?)}")
+        re_isreg = re_compile(r"{\.isreg:([^{}]*?)}")
         # {.islink:ARGS}
-        re_islink = re_compile(r"{\.islink:([^{}]+?)}")
+        re_islink = re_compile(r"{\.islink:([^{}]*?)}")
         # {.lisdir:ARGS}
-        re_lisdir = re_compile(r"{\.lisdir:([^{}]+?)}")
+        re_lisdir = re_compile(r"{\.lisdir:([^{}]*?)}")
         # {.lisreg:ARGS}
-        re_lisreg = re_compile(r"{\.lisreg:([^{}]+?)}")
+        re_lisreg = re_compile(r"{\.lisreg:([^{}]*?)}")
         # {.lislink:ARGS}
-        re_lislink = re_compile(r"{\.lislink:([^{}]+?)}")
+        re_lislink = re_compile(r"{\.lislink:([^{}]*?)}")
 
         # {!prog:args}data{!/} or {!prog}data{!/}
         #   - args is optional and will be appended as arguments to program,
