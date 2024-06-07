@@ -2,7 +2,7 @@
 
 Keep track of changes for [fpath](https://github.com/thingsiplay/fpath)
 
-## Next
+## 0.12 - June 7, 2024
 
 - initial Changelog
 
